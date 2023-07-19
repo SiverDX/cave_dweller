@@ -16,7 +16,7 @@ public class ServerConfig {
 
     public static ForgeConfigSpec.ConfigValue<Double> SPAWN_CHANCE_PER_TICK;
     public static ForgeConfigSpec.ConfigValue<Integer> SPAWN_HEIGHT;
-    public static ForgeConfigSpec.ConfigValue<Boolean> ALLOW_OPEN_SKY;
+    public static ForgeConfigSpec.ConfigValue<Boolean> ALLOW_SURFACE_SPAWN;
 
 
     static {
@@ -32,7 +32,7 @@ public class ServerConfig {
         BUILDER.comment("");
         SPAWN_CHANCE_PER_TICK = BUILDER.comment("The spawn chance per tick (once the calm timer is finished)").defineInRange("spawn_chance_per_tick", 0.005, 0, 1);
         SPAWN_HEIGHT = BUILDER.comment("Height at which the Cave Dweller can start to spawn").define("spawn_height", 40);
-        ALLOW_OPEN_SKY = BUILDER.comment("Whether the Cave Dweller can spawn the open or not").define("allow_open_sky", false);
+        ALLOW_SURFACE_SPAWN = BUILDER.comment("Whether the Cave Dweller can spawn on the surface or not").define("allow_surface_spawn", false);
 
         SPEC = BUILDER.build();
     }

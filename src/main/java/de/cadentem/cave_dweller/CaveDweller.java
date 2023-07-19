@@ -21,7 +21,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -166,7 +165,7 @@ public class CaveDweller {
         } else {
             Level level = player.getLevel();
             BlockPos playerBlockPos = new BlockPos(player.position().x, player.position().y, player.position().z);
-            return player.position().y < ServerConfig.SPAWN_HEIGHT.get() && (ServerConfig.ALLOW_OPEN_SKY.get() || !level.canSeeSky(playerBlockPos));
+            return player.position().y < ServerConfig.SPAWN_HEIGHT.get() && (ServerConfig.ALLOW_SURFACE_SPAWN.get() || !level.canSeeSky(playerBlockPos));
         }
     }
 
