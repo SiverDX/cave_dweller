@@ -37,6 +37,7 @@ public class CaveDwellerChaseGoal extends Goal {
     private final int ticksToSqueeze;
     private int currentTicksToSqueeze;
     private int currentTicksTillLeave;
+    private long lastGameTimeCheck;
     Vec3 xPathStartVec;
     Vec3 zPathStartVec;
     Vec3 xPathTargetVec;
@@ -68,9 +69,11 @@ public class CaveDwellerChaseGoal extends Goal {
         } else {
             long ticks = this.mob.level.getGameTime();
 
-            if (ticks % 20 != 0) {
+            if (ticks - lastGameTimeCheck < 20) {
                 return false;
             } else {
+                lastGameTimeCheck = ticks;
+
                 LivingEntity target = this.mob.getTarget();
 
                 Path path;

@@ -81,7 +81,7 @@ public class CaveDweller {
 
         // FIXME :: Creative tab
 
-        int mode = 2;
+        int mode = 3;
 
         if (mode == 1) {
             this.ticksCalmResetMin = Utils.minutesToTicks(5);
@@ -161,6 +161,7 @@ public class CaveDweller {
                     CaveDwellerEntity caveDweller = new CaveDwellerEntity(ModEntityTypes.CAVE_DWELLER.get(), overworld);
                     caveDweller.setInvisible(true);
                     caveDweller.setPos(caveDweller.generatePos(victim));
+                    overworld.addFreshEntity(caveDweller);
                     this.resetCalmTimer();
                 }
             }

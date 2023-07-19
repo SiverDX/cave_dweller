@@ -16,7 +16,7 @@ public class CaveDwellerBreakInvisGoal extends Goal {
     @Override
     public boolean canUse() {
         this.pendingTarget = this.caveDweller.level.getNearestPlayer(this.caveDweller, 200.0);
-        return !this.inPlayerLineOfSight() || !caveDweller.isPlayerLookingTowards(pendingTarget);
+        return caveDweller.isInvisible() && (!this.inPlayerLineOfSight() || !caveDweller.isPlayerLookingTowards(pendingTarget));
     }
 
     @Override
