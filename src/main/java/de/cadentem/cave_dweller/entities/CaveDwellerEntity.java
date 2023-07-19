@@ -40,7 +40,8 @@ import java.util.Random;
 
 public class CaveDwellerEntity extends Monster implements IAnimatable {
     private final AnimationFactory factory = GeckoLibUtil.createFactory(this);
-    public int rRollResult = 3;
+
+    public int reRollResult = 3;
     public boolean isAggro;
     private boolean returnShort = false;
     private boolean inTwoBlockSpace = false;
@@ -116,7 +117,6 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         this.targetSelector.addGoal(2, new CaveDwellerTargetSeesMeGoal(this));
     }
 
-    // FIXME :: Unused?
     public Vec3 generatePos(final Entity player) {
         Vec3 playerPos = player.position();
         Random rand = new Random();
@@ -253,7 +253,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     }
 
     public void reRoll() {
-        this.rRollResult = this.random.nextInt(3);
+        this.reRollResult = this.random.nextInt(3);
     }
 
     public Path createShortPath(final LivingEntity target) {

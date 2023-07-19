@@ -7,14 +7,13 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
-import software.bernie.geckolib3.model.AnimatedGeoModel;
 import software.bernie.geckolib3.renderers.geo.GeoEntityRenderer;
 
 public class CaveDwellerRenderer extends GeoEntityRenderer<CaveDwellerEntity> {
-    public CaveDwellerRenderer(final EntityRendererProvider.Context context, AnimatedGeoModel<CaveDwellerEntity> modelProvider) {
-        super(context, modelProvider);
-
+    public CaveDwellerRenderer(final EntityRendererProvider.Context context) {
+        super(context, new CaveDwellerModel());
         this.shadowRadius = 0.3F;
+
         addLayer(new CaveDwellerEyesLayer(this));
     }
 

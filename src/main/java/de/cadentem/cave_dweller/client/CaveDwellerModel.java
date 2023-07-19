@@ -33,5 +33,7 @@ public class CaveDwellerModel extends AnimatedGeoModel<CaveDwellerEntity> {
             head.setRotationX(entityData.headPitch * ((float) (Math.PI / 180.0)));
             head.setRotationY(entityData.netHeadYaw * (float) (Math.PI / 180.0));
         }
+
+        super.setCustomAnimations(animatable, instanceId, animationEvent);
     }
 }

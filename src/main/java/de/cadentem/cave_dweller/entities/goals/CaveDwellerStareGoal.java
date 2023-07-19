@@ -21,7 +21,7 @@ public class CaveDwellerStareGoal extends Goal {
         } else if (this.caveDweller.getTarget() == null) {
             return false;
         } else {
-            return this.caveDweller.rRollResult == 1;
+            return this.caveDweller.reRollResult == 1;
         }
     }
 
@@ -30,7 +30,7 @@ public class CaveDwellerStareGoal extends Goal {
         if (this.caveDweller.getTarget() == null) {
             return false;
         } else {
-            return this.caveDweller.rRollResult == 1;
+            return this.caveDweller.reRollResult == 1;
         }
     }
 

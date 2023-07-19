@@ -12,6 +12,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.protocol.game.ClientboundCustomSoundPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
@@ -42,6 +43,8 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
+import software.bernie.example.registry.ItemRegistry;
+import software.bernie.example.registry.SoundRegistry;
 import software.bernie.geckolib3.GeckoLib;
 
 import java.util.ArrayList;
@@ -65,10 +68,10 @@ public class CaveDweller {
     private final List<Player> spelunkers = new ArrayList<>();
 
     public CaveDweller() {
+        GeckoLib.initialize();
+
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         modEventBus.addListener(this::clientSetup);
-
-        GeckoLib.initialize();
 
         ModItems.register(modEventBus);
         ModSounds.register(modEventBus);
@@ -78,28 +81,36 @@ public class CaveDweller {
 
         // FIXME :: Creative tab
 
-        boolean USING_FAST_TIMERS = true;
-        if (!USING_FAST_TIMERS) {
-            this.ticksCalmResetMin = Utils.minutesToTicks(8);
-            this.ticksCalmResetMax = Utils.minutesToTicks(10);
-            this.ticksCalmResetCooldown = Utils.secondsToTicks(800);
-            this.ticksNoiseResetMin = Utils.secondsToTicks(100);
+        int mode = 2;
+
+        if (mode == 1) {
+            this.ticksCalmResetMin = Utils.minutesToTicks(5);
+            this.ticksCalmResetMax = Utils.minutesToTicks(7);
+            this.ticksCalmResetCooldown = Utils.minutesToTicks(10);
+            this.ticksNoiseResetMin = Utils.minutesToTicks(1);
             this.ticksNoiseResetMax = Utils.minutesToTicks(8);
             this.calmTimer = Utils.minutesToTicks(20);
-        } else {
+        } else if (mode == 2) {
             this.ticksCalmResetMin = Utils.secondsToTicks(48);
-            this.ticksCalmResetMax = Utils.minutesToTicks(1);
+            this.ticksCalmResetMax = Utils.secondsToTicks(60);
             this.ticksCalmResetCooldown = Utils.secondsToTicks(80);
             this.ticksNoiseResetMin = Utils.secondsToTicks(50);
             this.ticksNoiseResetMax = Utils.secondsToTicks(40);
-            this.calmTimer = Utils.minutesToTicks(1);
+            this.calmTimer = Utils.secondsToTicks(60);
+        } else {
+            this.ticksCalmResetMin = 48;
+            this.ticksCalmResetMax = 60;
+            this.ticksCalmResetCooldown = 80;
+            this.ticksNoiseResetMin = 50;
+            this.ticksNoiseResetMax = 40;
+            this.calmTimer = 60;
         }
 
         this.noiseTimer = Utils.minutesToTicks(4);
     }
 
     private void clientSetup(final FMLClientSetupEvent event) {
-        EntityRenderers.register(ModEntityTypes.CAVE_DWELLER.get(), manager -> new CaveDwellerRenderer(manager, new CaveDwellerModel()));
+        EntityRenderers.register(ModEntityTypes.CAVE_DWELLER.get(), CaveDwellerRenderer::new);
     }
 
     @SubscribeEvent
@@ -169,7 +180,7 @@ public class CaveDweller {
         Random rand = new Random();
         BlockPos playerBlockPos = new BlockPos(player.position().x, player.position().y, player.position().z);
 
-        /* FIXME :: Move to some client method
+//        /* FIXME :: Move to some client method
         if (this.checkIfPlayerIsSpelunker(player) && !player.isCreative() && !player.isSpectator()) {
             switch (rand.nextInt(4)) {
                 case 0 -> Minecraft.getInstance()
@@ -188,7 +199,7 @@ public class CaveDweller {
 
             this.resetNoiseTimer();
         }
-        */
+//        */
 
         return true;
     }
@@ -199,7 +210,7 @@ public class CaveDweller {
         } else {
             Level level = player.getLevel();
             BlockPos playerBlockPos = new BlockPos(player.position().x, player.position().y, player.position().z);
-            return player.position().y < 40.0 && !level.canSeeSky(playerBlockPos);
+            return player.position().y < 40.0 && !level.canSeeSky(playerBlockPos); // TODO :: Config for y value
         }
     }
 

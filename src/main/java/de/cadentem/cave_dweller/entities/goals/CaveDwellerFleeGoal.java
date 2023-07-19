@@ -31,7 +31,7 @@ public class CaveDwellerFleeGoal extends Goal {
     public boolean canUse() {
         if (this.caveDweller.isInvisible()) {
             return false;
-        } else if (this.caveDweller.rRollResult != 2) {
+        } else if (this.caveDweller.reRollResult != 2) {
             return false;
         } else {
             return this.caveDweller.getTarget() != null;
@@ -40,7 +40,7 @@ public class CaveDwellerFleeGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        if (this.caveDweller.rRollResult != 2) {
+        if (this.caveDweller.reRollResult != 2) {
             return false;
         } else {
             return this.caveDweller.getTarget() != null;

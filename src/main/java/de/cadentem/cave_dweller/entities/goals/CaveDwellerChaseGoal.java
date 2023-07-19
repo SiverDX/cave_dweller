@@ -63,7 +63,7 @@ public class CaveDwellerChaseGoal extends Goal {
     public boolean canUse() {
         if (this.cavedweller.isInvisible()) {
             return false;
-        } else if (this.cavedweller.rRollResult != 0) {
+        } else if (this.cavedweller.reRollResult != 0) {
             return false;
         } else {
             long ticks = this.mob.level.getGameTime();
