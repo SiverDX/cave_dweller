@@ -1,5 +1,7 @@
-# TODO
-* Bugs out (esp. when rejoining a world)
-* Creative mode tab
-* Sounds need to be moved to a non-server-side location (otherwise multiplayer crash)
+# Features
+* Original mod features
 * Config
+
+# TODO
+* Sound calls need to be moved to a client-side location (otherwise multiplayer crash)
+* More configs (entity attributes e.g.)

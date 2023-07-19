@@ -1,8 +1,8 @@
 package de.cadentem.cave_dweller;
 
 import com.mojang.logging.LogUtils;
-import de.cadentem.cave_dweller.client.CaveDwellerModel;
 import de.cadentem.cave_dweller.client.CaveDwellerRenderer;
+import de.cadentem.cave_dweller.config.ServerConfig;
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
 import de.cadentem.cave_dweller.registry.ModEntityTypes;
 import de.cadentem.cave_dweller.registry.ModItems;
@@ -12,39 +12,24 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ClientboundCustomSoundPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.material.Material;
-import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
-import software.bernie.example.registry.ItemRegistry;
-import software.bernie.example.registry.SoundRegistry;
 import software.bernie.geckolib3.GeckoLib;
 
 import java.util.ArrayList;
@@ -57,11 +42,7 @@ public class CaveDweller {
     public static final String MODID = "cave_dweller";
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private final int ticksCalmResetMin;
-    private final int ticksCalmResetMax;
-    private final int ticksCalmResetCooldown;
-    private final int ticksNoiseResetMin;
-    private final int ticksNoiseResetMax;
+    private boolean initialized; // TODO :: Currently needed since config values are not present at server start
     private int calmTimer;
     private int noiseTimer;
     private boolean anySpelunkers = false;
@@ -79,34 +60,7 @@ public class CaveDweller {
 
         MinecraftForge.EVENT_BUS.register(this);
 
-        // FIXME :: Creative tab
-
-        int mode = 3;
-
-        if (mode == 1) {
-            this.ticksCalmResetMin = Utils.minutesToTicks(5);
-            this.ticksCalmResetMax = Utils.minutesToTicks(7);
-            this.ticksCalmResetCooldown = Utils.minutesToTicks(10);
-            this.ticksNoiseResetMin = Utils.minutesToTicks(1);
-            this.ticksNoiseResetMax = Utils.minutesToTicks(8);
-            this.calmTimer = Utils.minutesToTicks(20);
-        } else if (mode == 2) {
-            this.ticksCalmResetMin = Utils.secondsToTicks(48);
-            this.ticksCalmResetMax = Utils.secondsToTicks(60);
-            this.ticksCalmResetCooldown = Utils.secondsToTicks(80);
-            this.ticksNoiseResetMin = Utils.secondsToTicks(50);
-            this.ticksNoiseResetMax = Utils.secondsToTicks(40);
-            this.calmTimer = Utils.secondsToTicks(60);
-        } else {
-            this.ticksCalmResetMin = 48;
-            this.ticksCalmResetMax = 60;
-            this.ticksCalmResetCooldown = 80;
-            this.ticksNoiseResetMin = 50;
-            this.ticksNoiseResetMax = 40;
-            this.calmTimer = 60;
-        }
-
-        this.noiseTimer = Utils.minutesToTicks(4);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, ServerConfig.SPEC);
     }
 
     private void clientSetup(final FMLClientSetupEvent event) {
@@ -114,12 +68,13 @@ public class CaveDweller {
     }
 
     @SubscribeEvent
-    public void onServerStarting(final ServerStartingEvent event) {
-        this.resetCalmTimer();
-    }
-
-    @SubscribeEvent
     public void serverTick(final TickEvent.ServerTickEvent event) {
+        if (!initialized) {
+            resetNoiseTimer();
+            resetCalmTimer();
+            initialized = true;
+        }
+
         ServerLevel overworld = event.getServer().getLevel(Level.OVERWORLD);
 
         if (overworld == null) {
@@ -137,7 +92,7 @@ public class CaveDweller {
         });
 
         --this.noiseTimer;
-        if (this.noiseTimer <= 0 && (dwellerExists.get() || this.calmTimer <= 6000)) {
+        if (this.noiseTimer <= 0 && (dwellerExists.get() || this.calmTimer <= Utils.secondsToTicks(ServerConfig.RESET_CALM_MAX.get()) / 2)) {
             overworld.getPlayers(this::playCaveSoundToSpelunkers);
         }
 
@@ -145,17 +100,17 @@ public class CaveDweller {
 
         --this.calmTimer;
         if (canSpawn && !dwellerExists.get()) {
-            Random rand = new Random();
+            Random random = new Random();
 
-            double chanceToSpawnPerTick = 0.005;
-            if (rand.nextDouble() <= chanceToSpawnPerTick) {
+            double chanceToSpawnPerTick = ServerConfig.SPAWN_CHANCE_PER_TICK.get();
+            if (random.nextDouble() <= chanceToSpawnPerTick) {
                 this.spelunkers.clear();
                 this.anySpelunkers = false;
 
                 overworld.getPlayers(this::listSpelunkers);
 
                 if (this.anySpelunkers) {
-                    Player victim = this.spelunkers.get(rand.nextInt(this.spelunkers.size()));
+                    Player victim = this.spelunkers.get(random.nextInt(this.spelunkers.size()));
                     overworld.getPlayers(this::playCaveSoundToSpelunkers);
 
                     CaveDwellerEntity caveDweller = new CaveDwellerEntity(ModEntityTypes.CAVE_DWELLER.get(), overworld);
@@ -211,21 +166,21 @@ public class CaveDweller {
         } else {
             Level level = player.getLevel();
             BlockPos playerBlockPos = new BlockPos(player.position().x, player.position().y, player.position().z);
-            return player.position().y < 40.0 && !level.canSeeSky(playerBlockPos); // TODO :: Config for y value
+            return player.position().y < ServerConfig.SPAWN_HEIGHT.get() && (ServerConfig.ALLOW_OPEN_SKY.get() || !level.canSeeSky(playerBlockPos));
         }
     }
 
     private void resetCalmTimer() {
-        Random rand = new Random();
-        this.calmTimer = this.ticksCalmResetMin + rand.nextInt(this.ticksCalmResetMax);
-        double chanceToCooldown = 0.4;
-        if (rand.nextDouble() <= chanceToCooldown) {
-            this.calmTimer = this.ticksCalmResetCooldown + rand.nextInt(this.ticksCalmResetCooldown);
+        Random random = new Random();
+        this.calmTimer = random.nextInt(Utils.secondsToTicks(ServerConfig.RESET_CALM_MIN.get()), Utils.secondsToTicks(ServerConfig.RESET_CALM_MAX.get()));
+
+        if (random.nextDouble() <= ServerConfig.RESET_CALM_COOLDOWN_CHANCE.get()) {
+            this.calmTimer = Utils.secondsToTicks(ServerConfig.RESET_CALM_COOLDOWN.get());
         }
     }
 
     private void resetNoiseTimer() {
-        Random rand = new Random();
-        this.noiseTimer = this.ticksNoiseResetMin + rand.nextInt(this.ticksNoiseResetMax);
+        Random random = new Random();
+        this.noiseTimer = random.nextInt(Utils.secondsToTicks(ServerConfig.RESET_NOISE_MIN.get()), Utils.secondsToTicks(ServerConfig.RESET_NOISE_MAX.get()));
     }
 }

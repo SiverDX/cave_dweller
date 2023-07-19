@@ -15,12 +15,6 @@ public class ModItemModelProvider extends ItemModelProvider {
     }
 
     protected void registerModels() {
-        this.simpleItem(ModItems.BABY_SPIDER);
-        this.simpleItem(ModItems.WORM);
         this.withExistingParent(ModItems.CAVE_DWELLER_SPAWN_EGG.getId().getPath(), this.mcLoc("item/template_spawn_egg"));
-    }
-
-    private void simpleItem(final RegistryObject<Item> item) {
-        this.withExistingParent(item.getId().getPath(), new ResourceLocation("item/generated")).texture("layer0", new ResourceLocation(CaveDweller.MODID, "item/" + item.getId().getPath()));
     }
 }

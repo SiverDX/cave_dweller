@@ -2,11 +2,10 @@ package de.cadentem.cave_dweller.entities;
 
 import de.cadentem.cave_dweller.entities.goals.*;
 import de.cadentem.cave_dweller.registry.ModSounds;
+import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -35,7 +34,6 @@ import software.bernie.geckolib3.core.manager.AnimationData;
 import software.bernie.geckolib3.core.manager.AnimationFactory;
 import software.bernie.geckolib3.util.GeckoLibUtil;
 
-import javax.annotation.Nullable;
 import java.util.Random;
 
 public class CaveDwellerEntity extends Monster implements IAnimatable {
@@ -173,7 +171,6 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         }
 
         if (this.isAggro || this.isFleeing) {
-//            this.shouldClearAnim = false;
             this.spottedByPlayer = false;
             this.entityData.set(SPOTTED_ACCESSOR, false);
         }
@@ -199,57 +196,6 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         float avgVelocity = (float) (Math.abs(velocity.x) + Math.abs(velocity.z)) / 2.0F;
 
         return avgVelocity > 0.03F;
-    }
-
-    private void TriggeredAnimationControllerTick() {
-        --this.waitToStartAnimatorController;
-
-        if (this.waitToStartAnimatorController <= 0.0F) {
-            if (this.squeezeCrawling) {
-//                this.triggerAnim("controller", "crawl");
-                this.currentAnim = this.CRAWL;
-                return;
-            }
-
-            if (this.spottedByPlayer) {
-//                this.triggerAnim("controller", "is_spotted");
-                this.currentAnim = this.IS_SPOTTED;
-            }
-
-            waitToStartAnimatorController = 20.0F;
-        }
-    }
-
-    public void triggerDwellerAnim(@Nullable final String controllerName, final String animationName, final RawAnimation animation) {
-        RawAnimation currentAnimation = this.currentAnim;
-
-        if (currentAnimation != null) {
-            if (currentAnimation != animation) {
-                if (this.getTarget() != null) {
-                    this.getTarget().sendSystemMessage(Component.nullToEmpty("currentAnimation does not match name, setting." + currentAnimation + " -> " + animationName));
-                }
-
-                if (this.level.isClientSide() && controllerName != null) {
-                    // animationName -> get type and use that
-//                    this.factory.getOrCreateAnimationData(this.getId()).getAnimationControllers().get(controllerName).setAnimation(new AnimationBuilder().addAnimation(animation.animationName, animation.loopType));
-                } else {
-//                    GeckoLibNetwork.syncAnimation(new EntityAni(this.getId(), controllerName, animationName), PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> this)
-//                    );
-                }
-            }
-        } else {
-            if (this.getTarget() != null) {
-                this.getTarget().sendSystemMessage(Component.nullToEmpty("currentAnimation null and setting"));
-            }
-
-            if (this.level.isClientSide()) {
-//                this.getAnimatableInstanceCache().getManagerForId((long) this.m_19879_()).tryTriggerAnimation(controllerName, animationName);
-            } else {
-//                GeckoLibNetwork.send(
-//                        new EntityAnimTriggerPacket(this.m_19879_(), controllerName, animationName), PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> this)
-//                );
-            }
-        }
     }
 
     public void reRoll() {
@@ -336,11 +282,9 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     }
 
     private void playBlockPosSound(final SoundEvent soundEvent, float volume, float pitch) {
-        // SoundInstance is not available server-side
-        if (this.level instanceof ClientLevel) {
-            BlockPos blockPos = new BlockPos(this.position());
-            Minecraft.getInstance().getSoundManager().play(new SimpleSoundInstance(soundEvent, SoundSource.HOSTILE, volume, pitch, RandomSource.create(), blockPos));
-        }
+        // FIXME :: SoundInstance is not available server-side
+        BlockPos blockPos = new BlockPos(this.position());
+        Minecraft.getInstance().getSoundManager().play(new SimpleSoundInstance(soundEvent, SoundSource.HOSTILE, volume, pitch, RandomSource.create(), blockPos));
     }
 
     public void playChaseSound() {
@@ -388,8 +332,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     }
 
     private void resetChaseSoundClock() {
-        int chaseSoundClockReset = 80;
-        this.chaseSoundClock = chaseSoundClockReset;
+        this.chaseSoundClock = Utils.secondsToTicks(5);
     }
 
     private SoundEvent chooseStep() {
