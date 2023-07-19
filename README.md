@@ -1,6 +1,7 @@
 # Features
 * Original mod features
 * Config
+* Requires Geckolib: https://www.curseforge.com/minecraft/mc-mods/geckolib/files?version=1.19.2&gameVersionTypeId=1
 * Recommend using https://www.curseforge.com/minecraft/texture-packs/creepier-cave-dwellers
 
 # TODO
