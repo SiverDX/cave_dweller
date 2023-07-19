@@ -1,0 +1,128 @@
+{
+  "cavenoise_1": {
+    "subtitle": "sounds.cave_dweller:cavenoise_1",
+    "sounds": [
+      "cave_dweller:cavenoise_1"
+    ]
+  },
+  "cavenoise_2": {
+    "subtitle": "sound.cave_dweller:cavenoise_2",
+    "sounds": [
+      "cave_dweller:cavenoise_2"
+    ]
+  },
+  "cavenoise_3": {
+    "subtitle": "sound.cave_dweller:cavenoise_3",
+    "sounds": [
+      "cave_dweller:cavenoise_3"
+    ]
+  },
+  "cavenoise_4": {
+    "subtitle": "sound.cave_dweller:cavenoise_4",
+    "sounds": [
+      "cave_dweller:cavenoise_4"
+    ]
+  },
+  "chase_step_1": {
+    "subtitle": "sound.cave_dweller:chase_step_1",
+    "sounds": [
+      "cave_dweller:chase_step_1"
+    ]
+  },
+  "chase_step_2": {
+    "subtitle": "sound.cave_dweller:chase_step_2",
+    "sounds": [
+      "cave_dweller:chase_step_2"
+    ]
+  },
+  "chase_step_3": {
+    "subtitle": "sound.cave_dweller:chase_step_3",
+    "sounds": [
+      "cave_dweller:chase_step_3"
+    ]
+  },
+  "chase_step_4": {
+    "subtitle": "sound.cave_dweller:chase_step_4",
+    "sounds": [
+      "cave_dweller:chase_step_4"
+    ]
+  },
+  "chase_1": {
+    "subtitle": "sound.cave_dweller:chase_1",
+    "sounds": [
+      "cave_dweller:chase_1"
+    ]
+  },
+  "chase_2": {
+    "subtitle": "sound.cave_dweller:chase_2",
+    "sounds": [
+      "cave_dweller:chase_2"
+    ]
+  },
+  "chase_3": {
+    "subtitle": "sound.cave_dweller:chase_3",
+    "sounds": [
+      "cave_dweller:chase_3"
+    ]
+  },
+  "chase_4": {
+    "subtitle": "sound.cave_dweller:chase_4",
+    "sounds": [
+      "cave_dweller:chase_4"
+    ]
+  },
+  "flee_1": {
+    "subtitle": "sound.cave_dweller:flee_1",
+    "sounds": [
+      "cave_dweller:flee_1"
+    ]
+  },
+  "flee_2": {
+    "subtitle": "sound.cave_dweller:flee_2",
+    "sounds": [
+      "cave_dweller:flee_2"
+    ]
+  },
+  "disappear": {
+    "subtitle": "sound.cave_dweller:disappear",
+    "sounds": [
+      "cave_dweller:disappear"
+    ]
+  },
+  "spotted": {
+    "subtitle": "sound.cave_dweller:spotted",
+    "sounds": [
+      "cave_dweller:spotted"
+    ]
+  },
+  "dweller_death": {
+    "subtitle": "sound.cave_dweller:dweller_death",
+    "sounds": [
+      "cave_dweller:dweller_death"
+    ]
+  },
+  "dweller_hurt_1": {
+    "subtitle": "sound.cave_dweller:dweller_hurt_1",
+    "sounds": [
+      "cave_dweller:dweller_hurt_1"
+    ]
+  },
+  "dweller_hurt_2": {
+    "subtitle": "sound.cave_dweller:dweller_hurt_2",
+    "sounds": [
+      "cave_dweller:dweller_hurt_2"
+    ]
+  },
+  "dweller_hurt_3": {
+    "subtitle": "sound.cave_dweller:dweller_hurt_3",
+    "sounds": [
+      "cave_dweller:dweller_hurt_3"
+    ]
+  },
+  "dweller_hurt_4": {
+    "subtitle": "sound.cave_dweller:dweller_hurt_4",
+    "sounds": [
+      "cave_dweller:dweller_hurt_4"
+    ]
+  }
+}
