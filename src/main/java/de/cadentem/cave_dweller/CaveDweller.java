@@ -5,18 +5,17 @@ import de.cadentem.cave_dweller.client.CaveDwellerRenderer;
 import de.cadentem.cave_dweller.config.ClientConfig;
 import de.cadentem.cave_dweller.config.ServerConfig;
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
+import de.cadentem.cave_dweller.network.CaveSound;
+import de.cadentem.cave_dweller.network.NetworkHandler;
 import de.cadentem.cave_dweller.registry.ModEntityTypes;
 import de.cadentem.cave_dweller.registry.ModItems;
 import de.cadentem.cave_dweller.registry.ModSounds;
 import de.cadentem.cave_dweller.util.Utils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRenderers;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -28,7 +27,9 @@ import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import software.bernie.geckolib3.GeckoLib;
 
@@ -53,6 +54,7 @@ public class CaveDweller {
 
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         modEventBus.addListener(this::clientSetup);
+        modEventBus.addListener(this::commonSetup);
 
         ModItems.register(modEventBus);
         ModSounds.register(modEventBus);
@@ -66,6 +68,10 @@ public class CaveDweller {
 
     private void clientSetup(final FMLClientSetupEvent event) {
         EntityRenderers.register(ModEntityTypes.CAVE_DWELLER.get(), CaveDwellerRenderer::new);
+    }
+
+    private void commonSetup(final FMLCommonSetupEvent event) {
+        NetworkHandler.register();
     }
 
     @SubscribeEvent
@@ -135,28 +141,16 @@ public class CaveDweller {
 
     public boolean playCaveSoundToSpelunkers(final ServerPlayer player) {
         Random rand = new Random();
-        BlockPos playerBlockPos = new BlockPos(player.position().x, player.position().y, player.position().z);
+        // TODO :: Play the same sound to all players?
+        ResourceLocation soundLocation = switch (rand.nextInt(4)) {
+            case 1 -> ModSounds.CAVENOISE_2.get().getLocation();
+            case 2 -> ModSounds.CAVENOISE_3.get().getLocation();
+            case 3 -> ModSounds.CAVENOISE_4.get().getLocation();
+            default -> ModSounds.CAVENOISE_1.get().getLocation();
+        };
 
-//        /* FIXME :: Move to some client method
-        if (this.checkIfPlayerIsSpelunker(player) && !player.isCreative() && !player.isSpectator()) {
-            switch (rand.nextInt(4)) {
-                case 0 -> Minecraft.getInstance()
-                        .getSoundManager()
-                        .play(new SimpleSoundInstance(ModSounds.CAVENOISE_1.get(), SoundSource.AMBIENT, 2.0F, 1.0F, RandomSource.create(), playerBlockPos));
-                case 1 -> Minecraft.getInstance()
-                        .getSoundManager()
-                        .play(new SimpleSoundInstance(ModSounds.CAVENOISE_2.get(), SoundSource.AMBIENT, 2.0F, 1.0F, RandomSource.create(), playerBlockPos));
-                case 2 -> Minecraft.getInstance()
-                        .getSoundManager()
-                        .play(new SimpleSoundInstance(ModSounds.CAVENOISE_3.get(), SoundSource.AMBIENT, 2.0F, 1.0F, RandomSource.create(), playerBlockPos));
-                case 3 -> Minecraft.getInstance()
-                        .getSoundManager()
-                        .play(new SimpleSoundInstance(ModSounds.CAVENOISE_4.get(), SoundSource.AMBIENT, 2.0F, 1.0F, RandomSource.create(), playerBlockPos));
-            }
-
-            this.resetNoiseTimer();
-        }
-//        */
+        NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CaveSound(soundLocation, player.blockPosition(), 2.0F, 1.0F));
+        this.resetNoiseTimer();
 
         return true;
     }

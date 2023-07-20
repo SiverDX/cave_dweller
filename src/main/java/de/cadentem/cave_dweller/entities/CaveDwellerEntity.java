@@ -1,17 +1,19 @@
 package de.cadentem.cave_dweller.entities;
 
 import de.cadentem.cave_dweller.entities.goals.*;
+import de.cadentem.cave_dweller.network.CaveSound;
+import de.cadentem.cave_dweller.network.NetworkHandler;
 import de.cadentem.cave_dweller.registry.ModSounds;
 import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -22,6 +24,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import software.bernie.geckolib3.core.IAnimatable;
 import software.bernie.geckolib3.core.PlayState;
@@ -281,10 +284,12 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         this.level.playSound(null, this, soundEvent, SoundSource.HOSTILE, volume, pitch);
     }
 
-    private void playBlockPosSound(final SoundEvent soundEvent, float volume, float pitch) {
-        // FIXME :: SoundInstance is not available server-side
-        BlockPos blockPos = new BlockPos(this.position());
-        Minecraft.getInstance().getSoundManager().play(new SimpleSoundInstance(soundEvent, SoundSource.HOSTILE, volume, pitch, RandomSource.create(), blockPos));
+    // TODO :: Is this needed? Why not just playEntitySound
+    private void playBlockPosSound(final ResourceLocation soundResource, float volume, float pitch) {
+        if (this.level instanceof ServerLevel serverLevel) {
+            int radius = 10; // blocks
+            serverLevel.getPlayers(player -> player.distanceToSqr(this) <= radius * radius).forEach(player -> NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CaveSound(soundResource, player.blockPosition(), volume, pitch)));
+        }
     }
 
     public void playChaseSound() {
@@ -308,7 +313,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     }
 
     public void playDisappearSound() {
-        this.playBlockPosSound(ModSounds.DISAPPEAR.get(), 3.0F, 1.0F);
+        this.playBlockPosSound(ModSounds.DISAPPEAR.get().getLocation(), 3.0F, 1.0F);
     }
 
     public void playFleeSound() {
@@ -368,7 +373,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         super.tickDeath();
 
         if (!this.alreadyPlayedDeathSound) {
-            this.playBlockPosSound(ModSounds.DWELLER_DEATH.get(), 2.0F, 1.0F);
+            this.playBlockPosSound(ModSounds.DWELLER_DEATH.get().getLocation(), 2.0F, 1.0F);
             this.alreadyPlayedDeathSound = true;
         }
     }
