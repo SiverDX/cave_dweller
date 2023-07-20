@@ -3,6 +3,7 @@ package de.cadentem.cave_dweller.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import de.cadentem.cave_dweller.CaveDweller;
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
+import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
@@ -17,9 +18,9 @@ public class CaveDwellerRenderer extends GeoEntityRenderer<CaveDwellerEntity> {
         addLayer(new CaveDwellerEyesLayer(this));
     }
 
-    @Override
+    @Override // TODO :: Is this even used?
     public @NotNull ResourceLocation getTextureLocation(@NotNull final CaveDwellerEntity instance) {
-        return new ResourceLocation(CaveDweller.MODID, "textures/entity/cave_dweller_texture.png");
+        return new ResourceLocation(CaveDweller.MODID, "textures/entity/cave_dweller_texture" + Utils.getTextureAppend() + ".png");
     }
 
     @Override

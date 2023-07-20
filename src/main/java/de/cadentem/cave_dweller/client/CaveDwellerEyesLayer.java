@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import de.cadentem.cave_dweller.CaveDweller;
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
+import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -12,13 +13,10 @@ import software.bernie.geckolib3.renderers.geo.GeoLayerRenderer;
 import software.bernie.geckolib3.renderers.geo.IGeoRenderer;
 
 public class CaveDwellerEyesLayer extends GeoLayerRenderer<CaveDwellerEntity> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation(CaveDweller.MODID, "textures/entity/cave_dweller_eyes_texture.png");
-
-    IGeoRenderer<CaveDwellerEntity> renderer;
+    public static ResourceLocation TEXTURE = new ResourceLocation(CaveDweller.MODID, "textures/entity/cave_dweller_eyes_texture" + Utils.getTextureAppend() + ".png");
 
     public CaveDwellerEyesLayer(final IGeoRenderer<CaveDwellerEntity> renderer) {
         super(renderer);
-        this.renderer = renderer;
     }
 
     @Override

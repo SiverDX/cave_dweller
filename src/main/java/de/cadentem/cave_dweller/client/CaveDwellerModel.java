@@ -1,7 +1,8 @@
-package de.cadentem.cave_dweller.client;
+ package de.cadentem.cave_dweller.client;
 
 import de.cadentem.cave_dweller.CaveDweller;
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
+import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.resources.ResourceLocation;
 import software.bernie.geckolib3.core.event.predicate.AnimationEvent;
 import software.bernie.geckolib3.core.processor.IBone;
@@ -11,12 +12,12 @@ import software.bernie.geckolib3.model.provider.data.EntityModelData;
 public class CaveDwellerModel extends AnimatedGeoModel<CaveDwellerEntity> {
     @Override
     public ResourceLocation getModelResource(final CaveDwellerEntity ignored) {
-        return new ResourceLocation(CaveDweller.MODID, "geo/cave_dweller.geo.json");
+        return new ResourceLocation(CaveDweller.MODID, "geo/cave_dweller.geo" + Utils.getTextureAppend() + ".json");
     }
 
     @Override
     public ResourceLocation getTextureResource(final CaveDwellerEntity ignored) {
-        return new ResourceLocation(CaveDweller.MODID, "textures/entity/cave_dweller_texture.png");
+        return new ResourceLocation(CaveDweller.MODID, "textures/entity/cave_dweller_texture" + Utils.getTextureAppend() + ".png");
     }
 
     @Override
