@@ -108,8 +108,7 @@ public class CaveDweller {
         if (canSpawn && !dwellerExists.get()) {
             Random random = new Random();
 
-            double chanceToSpawnPerTick = ServerConfig.SPAWN_CHANCE_PER_TICK.get();
-            if (random.nextDouble() <= chanceToSpawnPerTick) {
+            if (random.nextDouble() <= ServerConfig.SPAWN_CHANCE_PER_TICK.get()) {
                 this.spelunkers.clear();
                 this.anySpelunkers = false;
 

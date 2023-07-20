@@ -153,7 +153,6 @@ public class CaveDwellerChaseGoal extends Goal {
     public void tick() {
         this.mob.squeezeCrawling = this.squeezing;
         LivingEntity target = this.mob.getTarget();
-        ;
 
         this.tickAggroClock();
 

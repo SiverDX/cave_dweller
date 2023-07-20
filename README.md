@@ -13,3 +13,4 @@ Requires GeckoLib: https://www.curseforge.com/minecraft/mc-mods/geckolib/files?v
 # TODO
 * More configs (entity attributes e.g.)
 * Add chance to flee when its on fire?
+* Extinguish light sources in a certain radius around the mob?
