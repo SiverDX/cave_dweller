@@ -44,7 +44,7 @@ public class CaveDwellerStareGoal extends Goal {
         this.tickStareClock();
         LivingEntity target = this.caveDweller.getTarget();
 
-        if (this.shouldLeave && (!this.caveDweller.isPlayerLookingTowards(target) || !this.inPlayerLineOfSight())) {
+        if (this.shouldLeave && (!this.caveDweller.isLookingAtMe(target) || !this.inPlayerLineOfSight())) {
             this.caveDweller.playDisappearSound();
             this.caveDweller.discard();
         }

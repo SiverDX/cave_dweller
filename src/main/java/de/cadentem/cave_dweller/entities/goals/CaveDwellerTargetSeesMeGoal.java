@@ -27,7 +27,7 @@ public class CaveDwellerTargetSeesMeGoal extends NearestAttackableTargetGoal<Pla
             } else if (this.pendingTarget.isCreative()) {
                 return false;
             } else {
-                return this.inPlayerLineOfSight() && caveDweller.isPlayerLookingTowards(pendingTarget);
+                return this.inPlayerLineOfSight() && caveDweller.isLookingAtMe(pendingTarget);
             }
         }
     }

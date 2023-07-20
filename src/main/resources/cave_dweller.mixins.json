@@ -1,10 +1,10 @@
 {
-  "required": true,
   "minVersion": "0.8",
   "package": "de.cadentem.cave_dweller.mixin",
   "compatibilityLevel": "JAVA_8",
   "refmap": "cave_dweller.refmap.json",
   "mixins": [
+    "MixinGroundPathNavigation"
   ],
   "client": [
   ],

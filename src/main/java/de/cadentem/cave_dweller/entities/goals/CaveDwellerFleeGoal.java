@@ -58,7 +58,7 @@ public class CaveDwellerFleeGoal extends Goal {
     public void tick() {
         LivingEntity target = this.caveDweller.getTarget();
 
-        if (this.shouldLeave && (!caveDweller.isPlayerLookingTowards(target) || !this.inPlayerLineOfSight())) {
+        if (this.shouldLeave && (!caveDweller.isLookingAtMe(target) || !this.inPlayerLineOfSight())) {
             this.caveDweller.discard();
         }
 

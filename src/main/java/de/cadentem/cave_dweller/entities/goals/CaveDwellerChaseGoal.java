@@ -5,7 +5,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.state.BlockState;
@@ -16,8 +15,7 @@ import net.minecraft.world.phys.Vec3;
 import java.util.EnumSet;
 
 public class CaveDwellerChaseGoal extends Goal {
-    protected final PathfinderMob mob;
-    private final CaveDwellerEntity cavedweller;
+    protected final CaveDwellerEntity mob;
     private final double speedModifier;
     private final boolean followingTargetEvenIfNotSeen;
     private double pathedTargetX;
@@ -46,25 +44,24 @@ public class CaveDwellerChaseGoal extends Goal {
     Vec3 nodePositionCooldownPos;
     BlockPos nodePos;
 
-    public CaveDwellerChaseGoal(final PathfinderMob pMob, final CaveDwellerEntity pCaveDweller, double pSpeedModifier, boolean pFollowingTargetEvenIfNotSeen, float pTicksTillChase) {
+    public CaveDwellerChaseGoal(final CaveDwellerEntity pMob, double pSpeedModifier, boolean pFollowingTargetEvenIfNotSeen, float pTicksTillChase) {
         this.mob = pMob;
         this.speedModifier = pSpeedModifier;
         this.followingTargetEvenIfNotSeen = pFollowingTargetEvenIfNotSeen;
-        this.cavedweller = pCaveDweller;
         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
         this.ticksTillChase = pTicksTillChase;
         this.currentTicksTillChase = pTicksTillChase;
         this.vecNodePos = null;
         this.ticksToSqueeze = 15;
         this.nodePos = null;
-        this.currentTicksTillLeave = 600;
+        this.currentTicksTillLeave = 600; // TODO :: Config option
     }
 
     @Override
     public boolean canUse() {
-        if (this.cavedweller.isInvisible()) {
+        if (this.mob.isInvisible()) {
             return false;
-        } else if (this.cavedweller.reRollResult != 0) {
+        } else if (this.mob.reRollResult != 0) {
             return false;
         } else {
             long ticks = this.mob.level.getGameTime();
@@ -81,7 +78,7 @@ public class CaveDwellerChaseGoal extends Goal {
                     return false;
                 } else if (!target.isAlive()) {
                     return false;
-                } else if (this.canPenalize) {
+                } else if (this.canPenalize) { // FIXME :: This is always false
                     if (--this.ticksUntilNextPathRecalculation <= 0) {
                         path = this.mob.getNavigation().createPath(target, 0);
                         this.ticksUntilNextPathRecalculation = 2;
@@ -110,7 +107,7 @@ public class CaveDwellerChaseGoal extends Goal {
         if (target == null) {
             return false;
         } else if (!target.isAlive()) {
-            this.cavedweller.discard();
+            this.mob.discard();
 
             return false;
         } else if (!this.followingTargetEvenIfNotSeen) {
@@ -136,15 +133,15 @@ public class CaveDwellerChaseGoal extends Goal {
             this.mob.setTarget(null);
         }
 
-        this.cavedweller.squeezeCrawling = false;
-        this.cavedweller.getEntityData().set(CaveDwellerEntity.AGGRO_ACCESSOR, false);
-        this.cavedweller.isAggro = false;
-        this.cavedweller.refreshDimensions();
+        this.mob.squeezeCrawling = false;
+        this.mob.getEntityData().set(CaveDwellerEntity.AGGRO_ACCESSOR, false);
+        this.mob.isAggro = false;
+        this.mob.refreshDimensions();
         this.currentTicksTillChase = this.ticksTillChase;
         this.mob.setAggressive(false);
         this.mob.getNavigation().stop();
-        this.cavedweller.setNoGravity(false);
-        this.cavedweller.noPhysics = false;
+        this.mob.setNoGravity(false);
+        this.mob.noPhysics = false;
     }
 
     @Override
@@ -154,24 +151,21 @@ public class CaveDwellerChaseGoal extends Goal {
 
     @Override
     public void tick() {
-        this.cavedweller.squeezeCrawling = this.squeezing;
-        LivingEntity target = null;
-
-        if (this.cavedweller.getTarget() != null) {
-            target = this.mob.getTarget();
-        }
+        this.mob.squeezeCrawling = this.squeezing;
+        LivingEntity target = this.mob.getTarget();
+        ;
 
         this.tickAggroClock();
 
         if (!this.squeezing && target != null) {
-            if (this.cavedweller.isAggro) {
+            if (this.mob.isAggro) {
                 this.mob.getLookControl().setLookAt(target, 90.0F, 90.0F);
             } else {
                 this.mob.getLookControl().setLookAt(target, 180.0F, 1.0F);
             }
         }
 
-        if (this.cavedweller.getEntityData().get(CaveDwellerEntity.AGGRO_ACCESSOR)) {
+        if (this.mob.getEntityData().get(CaveDwellerEntity.AGGRO_ACCESSOR)) {
             if (this.squeezing) {
                 this.squeezingTick();
             } else {
@@ -180,8 +174,8 @@ public class CaveDwellerChaseGoal extends Goal {
         }
 
         --this.currentTicksTillLeave;
-        if (this.currentTicksTillLeave <= 0 && (!cavedweller.isPlayerLookingTowards(target) || !this.inPlayerLineOfSight())) {
-            this.cavedweller.discard();
+        if (this.currentTicksTillLeave <= 0 && (!this.mob.isLookingAtMe(target) || !this.inPlayerLineOfSight())) {
+            this.mob.discard();
         }
     }
 
@@ -189,24 +183,26 @@ public class CaveDwellerChaseGoal extends Goal {
         --this.currentTicksTillChase;
 
         if (this.currentTicksTillChase <= 0.0F) {
-            this.cavedweller.getEntityData().set(CaveDwellerEntity.AGGRO_ACCESSOR, true);
+            this.mob.getEntityData().set(CaveDwellerEntity.AGGRO_ACCESSOR, true);
         }
 
-        this.cavedweller.isAggro = true;
-        this.cavedweller.refreshDimensions();
+        this.mob.isAggro = true;
+        this.mob.refreshDimensions();
     }
 
     private Path getShortPath(final LivingEntity target) {
-        this.shortPath = this.cavedweller.createShortPath(target);
+        this.shortPath = this.mob.createShortPath(target);
         return shortPath;
     }
 
     private void squeezingTick() {
-        this.cavedweller.setNoGravity(true);
-        this.cavedweller.noPhysics = true;
+        this.mob.setNoGravity(true);
+        this.mob.noPhysics = true;
 
-        if (this.mob.getNavigation().getPath() != null) {
-            this.nodePos = this.mob.getNavigation().getPath().getNextNodePos();
+        Path path = this.mob.getNavigation().getPath();
+
+        if (path != null && !path.isDone()) {
+            this.nodePos = path.getNextNodePos();
         }
 
         this.mob.getNavigation().stop();
@@ -219,7 +215,7 @@ public class CaveDwellerChaseGoal extends Goal {
             }
 
             this.nodePositionCooldownPos = this.vecNodePos;
-            Vec3 vecOldMobPos = this.cavedweller.getPosition(1.0F);
+            Vec3 vecOldMobPos = this.mob.getPosition(1.0F);
 
             if (this.xPathStartVec == null) {
                 if (vecOldMobPos.x < this.vecNodePos.x) {
@@ -245,11 +241,11 @@ public class CaveDwellerChaseGoal extends Goal {
                     this.xPathTargetVec.x, this.xPathTargetVec.y, this.xPathTargetVec.z
             );
 
-            BlockState blockstate = this.cavedweller.level.getBlockState(blockpos$mutableblockpos);
+            BlockState blockstate = this.mob.level.getBlockState(blockpos$mutableblockpos);
             boolean xBlocked = blockstate.getMaterial().blocksMotion();
 
             blockpos$mutableblockpos = new BlockPos.MutableBlockPos(this.zPathTargetVec.x, this.zPathTargetVec.y, this.zPathTargetVec.z);
-            blockstate = this.cavedweller.level.getBlockState(blockpos$mutableblockpos);
+            blockstate = this.mob.level.getBlockState(blockpos$mutableblockpos);
             boolean zBlocked = blockstate.getMaterial().blocksMotion();
 
             if (xBlocked) {
@@ -276,11 +272,11 @@ public class CaveDwellerChaseGoal extends Goal {
                 rotAxis = rotAxis.normalize();
 
                 double rotAngle = Math.toDegrees(Math.atan2(-rotAxis.x, rotAxis.z));
-                this.cavedweller.setYHeadRot((float) rotAngle);
-                this.cavedweller.moveTo(vecCurrentMobPos.x, vecCurrentMobPos.y, vecCurrentMobPos.z, (float) rotAngle, (float) rotAngle);
+                this.mob.setYHeadRot((float) rotAngle);
+                this.mob.moveTo(vecCurrentMobPos.x, vecCurrentMobPos.y, vecCurrentMobPos.z, (float) rotAngle, (float) rotAngle);
 
                 if (tickF >= 1.0F) {
-                    this.cavedweller.setPos(this.vecTargetPos.x, this.vecTargetPos.y, this.vecTargetPos.z);
+                    this.mob.setPos(this.vecTargetPos.x, this.vecTargetPos.y, this.vecTargetPos.z);
                     this.stopSqueezing();
                 }
             } else {
@@ -291,9 +287,9 @@ public class CaveDwellerChaseGoal extends Goal {
 
     private void stopSqueezing() {
         this.squeezing = false;
-        this.cavedweller.getEntityData().set(CaveDwellerEntity.SQUEEZING_ACCESSOR, false);
-        this.cavedweller.setNoGravity(false);
-        this.cavedweller.noPhysics = false;
+        this.mob.getEntityData().set(CaveDwellerEntity.SQUEEZING_ACCESSOR, false);
+        this.mob.setNoGravity(false);
+        this.mob.noPhysics = false;
     }
 
     private void startSqueezing() {
@@ -306,11 +302,11 @@ public class CaveDwellerChaseGoal extends Goal {
         this.vecTargetPos = null;
         this.currentTicksToSqueeze = 0;
         this.squeezing = true;
-        this.cavedweller.getEntityData().set(CaveDwellerEntity.SQUEEZING_ACCESSOR, true);
+        this.mob.getEntityData().set(CaveDwellerEntity.SQUEEZING_ACCESSOR, true);
         this.nodePos = null;
     }
 
-    private boolean checkIfShouldSqueeze(final Path pathToCheck) {
+    private boolean shouldSqueeze(final Path pathToCheck) {
         if (pathToCheck == null) {
             return false;
         } else {
@@ -324,8 +320,7 @@ public class CaveDwellerChaseGoal extends Goal {
                         && blockpos.getZ() == (int) this.nodePositionCooldownPos.z) {
                     return false;
                 } else {
-                    BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos(blockpos.getX(), blockpos.getY() + 1, blockpos.getZ());
-                    BlockState blockstate = this.cavedweller.level.getBlockState(blockpos$mutableblockpos);
+                    BlockState blockstate = this.mob.level.getBlockState(blockpos.above());
                     return blockstate.getMaterial().blocksMotion();
                 }
             } else {
@@ -335,92 +330,91 @@ public class CaveDwellerChaseGoal extends Goal {
     }
 
     private void aggroTick() {
-        this.cavedweller.playChaseSound();
-        this.cavedweller.noPhysics = false;
-        this.cavedweller.setNoGravity(false);
+        this.mob.playChaseSound();
+        this.mob.noPhysics = false;
+        this.mob.setNoGravity(false);
 
         LivingEntity target = this.mob.getTarget();
 
+        this.shouldUseShortPath = true;
         Path path = this.mob.getNavigation().getPath();
+
+        if (path != null) {
+            Node finalPathPoint = path.getEndNode();
+
+            if (finalPathPoint != null && !path.isDone()) {
+                this.shouldUseShortPath = false;
+            }
+        }
 
         if (this.shouldUseShortPath) {
             path = this.getShortPath(target);
         }
 
-        if (this.checkIfShouldSqueeze(path)) {
+        if (this.shouldSqueeze(path)) {
             this.startSqueezing();
             this.squeezing = true;
-            this.cavedweller.getEntityData().set(CaveDwellerEntity.SQUEEZING_ACCESSOR, true);
-        } else {
-            if (target != null) {
-                double distance = this.mob.distanceToSqr(target);
-                this.ticksUntilNextPathRecalculation = Math.max(this.ticksUntilNextPathRecalculation - 1, 0);
+            this.mob.getEntityData().set(CaveDwellerEntity.SQUEEZING_ACCESSOR, true);
+        } else if (target != null) {
+            double distance = this.mob.distanceToSqr(target);
+            this.ticksUntilNextPathRecalculation = Math.max(this.ticksUntilNextPathRecalculation - 1, 0);
 
-                if ((this.followingTargetEvenIfNotSeen || this.mob.getSensing().hasLineOfSight(target))
-                        && this.ticksUntilNextPathRecalculation <= 0
-                        && (
-                        this.pathedTargetX == 0.0 && this.pathedTargetY == 0.0 && this.pathedTargetZ == 0.0
-                                || target.distanceToSqr(this.pathedTargetX, this.pathedTargetY, this.pathedTargetZ) >= 1.0
-                                || this.mob.getRandom().nextFloat() < 0.05F
-                )) {
-                    this.pathedTargetX = target.getX();
-                    this.pathedTargetY = target.getY();
-                    this.pathedTargetZ = target.getZ();
-                    this.ticksUntilNextPathRecalculation = 2;
-                    if (this.canPenalize) {
-                        this.ticksUntilNextPathRecalculation += this.failedPathFindingPenalty;
+            if (this.ticksUntilNextPathRecalculation == 0
+                    && (this.followingTargetEvenIfNotSeen || this.mob.getSensing().hasLineOfSight(target))
+                    && (
+                    this.pathedTargetX == 0 && this.pathedTargetY == 0 && this.pathedTargetZ == 0
+                            || target.distanceToSqr(this.pathedTargetX, this.pathedTargetY, this.pathedTargetZ) >= 1
+                            || this.mob.getRandom().nextFloat() < 0.05
+            )) {
+                this.pathedTargetX = target.getX();
+                this.pathedTargetY = target.getY();
+                this.pathedTargetZ = target.getZ();
+                this.ticksUntilNextPathRecalculation = 2;
 
-                        if (path != null) {
-                            Node finalPathPoint = path.getEndNode();
-
-                            if (finalPathPoint != null && target.distanceToSqr(finalPathPoint.x, finalPathPoint.y, finalPathPoint.z) < 1.0) {
-                                this.failedPathFindingPenalty = 0;
-                            } else {
-                                this.failedPathFindingPenalty += 10;
-                            }
-                        } else {
-                            this.failedPathFindingPenalty += 10;
-                        }
-                    }
+                // If a path could not be found add a delay before the next check
+                if (this.canPenalize) { // FIXME :: this is always false
+                    this.ticksUntilNextPathRecalculation += this.failedPathFindingPenalty;
 
                     if (path != null) {
                         Node finalPathPoint = path.getEndNode();
 
-                        if (finalPathPoint == null || !(target.distanceToSqr(finalPathPoint.x, finalPathPoint.y, finalPathPoint.z) < 1.0)) {
-                            this.shouldUseShortPath = true;
+                        if (finalPathPoint != null && target.distanceToSqr(finalPathPoint.x, finalPathPoint.y, finalPathPoint.z) < 1) {
+                            this.failedPathFindingPenalty = 0;
+                        } else {
+                            this.failedPathFindingPenalty += 10;
                         }
                     } else {
-                        this.shouldUseShortPath = true;
+                        this.failedPathFindingPenalty += 10;
                     }
-
-                    if (distance > 1024.0) {
-                        this.ticksUntilNextPathRecalculation += 10;
-                    } else if (distance > 256.0) {
-                        this.ticksUntilNextPathRecalculation += 5;
-                    }
-
-                    if (!this.shouldUseShortPath) {
-                        if (!this.mob.getNavigation().moveTo(target, this.speedModifier)) {
-                            this.cavedweller.startedMovingChase = true;
-                            this.ticksUntilNextPathRecalculation += 8;
-                        }
-                    } else if (!this.mob.getNavigation().moveTo(this.shortPath, this.speedModifier)) {
-                        this.cavedweller.startedMovingChase = true;
-                        this.ticksUntilNextPathRecalculation += 8;
-                    }
-
-                    this.ticksUntilNextPathRecalculation = this.adjustedTickDelay(this.ticksUntilNextPathRecalculation);
                 }
 
-                this.ticksUntilNextAttack = Math.max(this.ticksUntilNextAttack - 1, 0);
-                this.checkAndPerformAttack(target, distance);
+                if (distance > 1024.0) {
+                    this.ticksUntilNextPathRecalculation += 10;
+                } else if (distance > 256.0) {
+                    this.ticksUntilNextPathRecalculation += 5;
+                }
+
+                if (this.shouldUseShortPath) {
+                    if (!this.mob.getNavigation().moveTo(this.shortPath, this.speedModifier)) {
+                        this.mob.startedMovingChase = true;
+                        this.ticksUntilNextPathRecalculation += 8;
+                    }
+                } else if (!this.mob.getNavigation().moveTo(target, this.speedModifier)) {
+                    this.mob.startedMovingChase = true;
+                    this.ticksUntilNextPathRecalculation += 8;
+                }
+
+                this.ticksUntilNextPathRecalculation = this.adjustedTickDelay(this.ticksUntilNextPathRecalculation);
             }
+
+            this.ticksUntilNextAttack = Math.max(this.ticksUntilNextAttack - 1, 0);
+            this.checkAndPerformAttack(target, distance);
         }
     }
 
     private boolean inPlayerLineOfSight() {
-        LivingEntity target = this.cavedweller.getTarget();
-        return target != null && target.hasLineOfSight(this.cavedweller);
+        LivingEntity target = this.mob.getTarget();
+        return target != null && target.hasLineOfSight(this.mob);
     }
 
     private void checkAndPerformAttack(final LivingEntity target, double distanceToTarget) {

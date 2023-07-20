@@ -18,6 +18,8 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.navigation.PathNavigation;
+import net.minecraft.world.entity.ai.navigation.WallClimberNavigation;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -44,13 +46,12 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
 
     public int reRollResult = 3;
     public boolean isAggro;
-    private boolean returnShort = false;
+    public boolean fakeSize = false;
     private boolean inTwoBlockSpace = false;
     public boolean spottedByPlayer = false;
     public boolean squeezeCrawling = false;
     public boolean isFleeing;
     public boolean startedMovingChase = false;
-    private float waitToStartAnimatorController = 20.0F;
     private int ticksTillRemove;
 
     private final RawAnimation OLD_RUN = new RawAnimation("animation.cave_dweller.run", ILoopType.EDefaultLoopTypes.LOOP);
@@ -64,13 +65,13 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     private final RawAnimation IS_SPOTTED = new RawAnimation("animation.cave_dweller.spotted", ILoopType.EDefaultLoopTypes.HOLD_ON_LAST_FRAME);
     private final RawAnimation CRAWL = new RawAnimation("animation.cave_dweller.crawl", ILoopType.EDefaultLoopTypes.HOLD_ON_LAST_FRAME);
     private final RawAnimation FLEE = new RawAnimation("animation.cave_dweller.flee", ILoopType.EDefaultLoopTypes.LOOP);
-    private RawAnimation currentAnim;
 
     public static final EntityDataAccessor<Boolean> FLEEING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
     public static final EntityDataAccessor<Boolean> CROUCHING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
     public static final EntityDataAccessor<Boolean> AGGRO_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
     public static final EntityDataAccessor<Boolean> SQUEEZING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
     public static final EntityDataAccessor<Boolean> SPOTTED_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
+    public static final EntityDataAccessor<Boolean> CLIMBING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
 
     private final float twoBlockSpaceCooldown;
     private float twoBlockSpaceTimer = 0.0F;
@@ -85,7 +86,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         this.maxUpStep = 1.0F;
         this.refreshDimensions();
         this.twoBlockSpaceCooldown = 5.0F;
-        this.ticksTillRemove = 6000;
+        this.ticksTillRemove = 6000; // TODO :: Config option
     }
 
     public static AttributeSupplier.Builder getAttributeBuilder() {
@@ -105,18 +106,21 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         this.entityData.define(AGGRO_ACCESSOR, false);
         this.entityData.define(SQUEEZING_ACCESSOR, false);
         this.entityData.define(SPOTTED_ACCESSOR, false);
+        this.entityData.define(CLIMBING_ACCESSOR, false);
     }
 
     @Override
     protected void registerGoals() {
         this.goalSelector.addGoal(1, new CaveDwellerStareGoal(this, 100.0F));
-        this.goalSelector.addGoal(1, new CaveDwellerChaseGoal(this, this, 0.85F, true, 20.0F));
+        this.goalSelector.addGoal(1, new CaveDwellerChaseGoal(this,  0.85F, true, 20.0F));
         this.goalSelector.addGoal(1, new CaveDwellerFleeGoal(this, 20.0F, 1.0));
         this.goalSelector.addGoal(1, new CaveDwellerStrollGoal(this, 0.7));
         this.goalSelector.addGoal(1, new CaveDwellerBreakInvisGoal(this));
         this.targetSelector.addGoal(1, new CaveDwellerTargetTooCloseGoal(this, 12.0F));
         this.targetSelector.addGoal(2, new CaveDwellerTargetSeesMeGoal(this));
     }
+
+    // TODO :: getStandingEyeHeight
 
     public Vec3 generatePos(final Entity player) {
         Vec3 playerPos = player.position();
@@ -159,10 +163,10 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         }
 
         BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos(this.position().x, this.position().y + 2.0, this.position().z);
-        BlockState blockstate = this.level.getBlockState(blockpos$mutableblockpos);
-        boolean flag = blockstate.getMaterial().blocksMotion();
+        BlockState above = this.level.getBlockState(blockpos$mutableblockpos);
+        boolean blocksMotion = above.getMaterial().blocksMotion();
 
-        if (flag) {
+        if (blocksMotion) {
             this.twoBlockSpaceTimer = this.twoBlockSpaceCooldown;
             this.inTwoBlockSpace = true;
         } else {
@@ -179,16 +183,22 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         }
 
         super.tick();
+
         this.entityData.set(CROUCHING_ACCESSOR, this.inTwoBlockSpace);
+
         if (this.entityData.get(SPOTTED_ACCESSOR)) {
             this.playSpottedSound();
+        }
+
+        if (!this.level.isClientSide) {
+            this.setClimbing(this.horizontalCollision);
         }
     }
 
     @Override
     public @NotNull EntityDimensions getDimensions(@NotNull final Pose pose) {
         if (this.isAggro) {
-            return this.returnShort ? new EntityDimensions(0.5F, 0.9F, true) : new EntityDimensions(0.5F, 1.9F, true);
+            return this.fakeSize ? new EntityDimensions(0.5F, 0.9F, true) : new EntityDimensions(0.5F, 1.9F, true);
         } else {
             return new EntityDimensions(0.5F, 1.9F, true);
         }
@@ -206,12 +216,30 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     }
 
     public Path createShortPath(final LivingEntity target) {
-        this.returnShort = true;
+        this.fakeSize = true;
         this.refreshDimensions();
         Path shortPath = this.getNavigation().createPath(target, 0);
-        this.returnShort = false;
+        this.fakeSize = false;
         this.refreshDimensions();
         return shortPath;
+    }
+
+    @Override
+    public boolean onClimbable() {
+        return this.isClimbing();
+    }
+
+    public boolean isClimbing() {
+        return this.entityData.get(CLIMBING_ACCESSOR);
+    }
+
+    public void setClimbing(boolean isClimbing) {
+        this.entityData.set(CLIMBING_ACCESSOR, isClimbing);
+    }
+
+    @Override
+    protected @NotNull PathNavigation createNavigation(@NotNull final Level level) {
+        return new WallClimberNavigation(this, level);
     }
 
     private PlayState predicate(final AnimationEvent<CaveDwellerEntity> event) {
@@ -378,7 +406,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         }
     }
 
-    public boolean isPlayerLookingTowards(final Entity pendingTarget) {
+    public boolean isLookingAtMe(final Entity pendingTarget) {
         if (pendingTarget == null) {
             return false;
         }
