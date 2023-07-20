@@ -2,7 +2,6 @@ package de.cadentem.cave_dweller;
 
 import com.mojang.logging.LogUtils;
 import de.cadentem.cave_dweller.client.CaveDwellerRenderer;
-import de.cadentem.cave_dweller.config.ClientConfig;
 import de.cadentem.cave_dweller.config.ServerConfig;
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
 import de.cadentem.cave_dweller.network.CaveSound;
@@ -63,7 +62,7 @@ public class CaveDweller {
         MinecraftForge.EVENT_BUS.register(this);
 
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, ServerConfig.SPEC);
-        ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
+//        ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
     }
 
     private void clientSetup(final FMLClientSetupEvent event) {
