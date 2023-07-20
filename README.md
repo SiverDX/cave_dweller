@@ -1,7 +1,7 @@
 # Features
 * Original mod features
 * Fixed some issues
-* Scuffed climbing (no animation too)
+* Scuffed climbing (has no animation)
 * Configs
 
 Recommend using https://www.curseforge.com/minecraft/texture-packs/creepier-cave-dwellers
