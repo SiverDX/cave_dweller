@@ -129,7 +129,7 @@ public class CaveDweller {
     }
 
     private boolean listSpelunkers(final ServerPlayer player) {
-        if (this.checkIfPlayerIsSpelunker(player)) {
+        if (this.isPlayerSpelunker(player)) {
             this.anySpelunkers = true;
             this.spelunkers.add(player);
         }
@@ -138,6 +138,10 @@ public class CaveDweller {
     }
 
     public boolean playCaveSoundToSpelunkers(final ServerPlayer player) {
+        if (!isPlayerSpelunker(player)) {
+            return false;
+        }
+
         Random rand = new Random();
         // TODO :: Play the same sound to all players?
         ResourceLocation soundLocation = switch (rand.nextInt(4)) {
@@ -153,7 +157,7 @@ public class CaveDweller {
         return true;
     }
 
-    public boolean checkIfPlayerIsSpelunker(final Player player) {
+    public boolean isPlayerSpelunker(final Player player) {
         if (player == null) {
             return false;
         } else {

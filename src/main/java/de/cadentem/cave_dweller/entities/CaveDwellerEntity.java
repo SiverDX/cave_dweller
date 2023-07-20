@@ -5,7 +5,6 @@ import de.cadentem.cave_dweller.network.CaveSound;
 import de.cadentem.cave_dweller.network.NetworkHandler;
 import de.cadentem.cave_dweller.registry.ModSounds;
 import de.cadentem.cave_dweller.util.Utils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -21,10 +20,10 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.navigation.WallClimberNavigation;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.Path;
-import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
@@ -406,71 +405,29 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         }
     }
 
+    /** Referenced from {@link net.minecraft.world.entity.monster.EnderMan#isLookingAtMe(Player)} */
     public boolean isLookingAtMe(final Entity pendingTarget) {
-        if (pendingTarget == null) {
+        if (!(pendingTarget instanceof Player player)) {
             return false;
         }
 
-        Minecraft minecraft = Minecraft.getInstance();
-
-        boolean yawPlayerLookingTowards = false;
-
-        float fov = (float) minecraft.options.fov().get();
-        float yFovMod = 0.65F;
-        float fovMod = (35.0F / fov - 1.0F) * 0.4F + 1.0F;
-        fov *= fovMod;
-
-        Vec3 targetPosition = pendingTarget.position();
-        Vec3 caveDwellerPosition = this.position();
-        Vec2 distance = new Vec2((float) caveDwellerPosition.x - (float) targetPosition.x, (float) caveDwellerPosition.z - (float) targetPosition.z);
-        distance = distance.normalized();
-
-        double newAngle = Math.toDegrees(Math.atan2(distance.x, distance.y));
-        float lookX = (float) pendingTarget.getViewVector(1.0F).x;
-        float lookZ = (float) pendingTarget.getViewVector(1.0F).z;
-        double newLookAngle = Math.toDegrees(Math.atan2(lookX, lookZ));
-        double newNewAngle = this.loopAngle(newAngle - newLookAngle) + (double) fov;
-        newNewAngle = this.loopAngle(newNewAngle);
-
-        if (newNewAngle > 0.0 && newNewAngle < (double) (fov * 2.0F)) {
-            yawPlayerLookingTowards = true;
+        if (player.isSpectator() || !player.isAlive()) {
+            return false;
         }
 
-        boolean pitchPlayerLookingTowards = false;
-        boolean shouldOnlyUsePitch = false;
-        float yFov = fov * yFovMod;
-        Vec2 yDistance = new Vec2(
-                (float) Math.sqrt((caveDwellerPosition.x - targetPosition.x) * (caveDwellerPosition.x - targetPosition.x) + (caveDwellerPosition.z - targetPosition.z) * (caveDwellerPosition.z - targetPosition.z)),
-                (float) (caveDwellerPosition.y - targetPosition.y)
-        );
-        yDistance = yDistance.normalized();
+        double maximumDistance = 20; // blocks // TODO :: Config?
 
-        double yAngle = Math.toDegrees(Math.atan2(yDistance.x, yDistance.y));
-        float lookY = (float) pendingTarget.getViewVector(1.0F).y;
-        Vec2 lookDist = new Vec2((float) Math.sqrt(lookX * lookX + lookZ * lookZ), lookY);
-        lookDist = lookDist.normalized();
-
-        double yLookAngle = Math.toDegrees(Math.atan2(lookDist.x, lookDist.y));
-        double newYAngle = this.loopAngle(yAngle - yLookAngle) + (double) yFov;
-        newYAngle = this.loopAngle(newYAngle);
-
-        if (newYAngle > 0.0 && newYAngle < (double) (yFov * 2.0F)) {
-            pitchPlayerLookingTowards = true;
+        if (player.getEyePosition(1).distanceTo(this.getPosition(1)) > maximumDistance) {
+            return false;
         }
 
-        if (!(yLookAngle < (double) (180.0F - yFov)) || !(yLookAngle > (double) yFov)) {
-            shouldOnlyUsePitch = true;
-        }
+        Vec3 viewVector = player.getViewVector(1.0F).normalize();
+        Vec3 difference = new Vec3(this.getX() - player.getX(), this.getEyeY() - player.getEyeY(), this.getZ() - player.getZ());
+        double length = difference.length();
+        difference = difference.normalize();
+        double dot = viewVector.dot(difference);
 
-        return (yawPlayerLookingTowards || shouldOnlyUsePitch) && pitchPlayerLookingTowards;
-    }
-
-    private double loopAngle(double angle) {
-        if (angle > 360.0) {
-            return angle - 360.0;
-        } else {
-            return angle < 0.0 ? angle + 360.0 : angle;
-        }
+        return dot > 1.0D - 0.025D / length && player.hasLineOfSight(this);
     }
 
     @Override
