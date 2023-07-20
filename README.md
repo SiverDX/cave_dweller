@@ -1,7 +1,10 @@
 # Features
 * Original mod features
 * Config
-* Built-in textures from https://www.curseforge.com/minecraft/texture-packs/creepier-cave-dwellers
+
+Recommend using https://www.curseforge.com/minecraft/texture-packs/creepier-cave-dwellers
+* You will need to rename `assets\cavenoise` to `assets\cave_dweller`
+* Delete everything except the `geo` and `textures` directories
 
 Requires GeckoLib: https://www.curseforge.com/minecraft/mc-mods/geckolib/files?version=1.19.2&gameVersionTypeId=1
 
