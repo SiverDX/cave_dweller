@@ -35,15 +35,15 @@ public class ServerConfig {
     static {
         BUILDER.push("Spawn Timers");
         BUILDER.comment("Influence the time it takes for a cave dweller to spawn");
-        RESET_CALM_MIN = BUILDER.comment("Minimum time between spawns in seconds").defineInRange("reset_calm_min", 60, 0, 60 * 60 * 24);
-        RESET_CALM_MAX = BUILDER.comment("Maximum time between spawns in seconds").defineInRange("reset_calm_max", 120, 0, 60 * 60 * 24);
+        RESET_CALM_MIN = BUILDER.comment("Minimum time between spawns in seconds").defineInRange("reset_calm_min", 300, 0, 60 * 60 * 24);
+        RESET_CALM_MAX = BUILDER.comment("Maximum time between spawns in seconds").defineInRange("reset_calm_max", 600, 0, 60 * 60 * 24);
         RESET_CALM_COOLDOWN_CHANCE = BUILDER.comment("Chance for a spawn cooldown to occur").defineInRange("reset_calm_cooldown_chance", 0.4, 0, 1);
-        RESET_CALM_COOLDOWN = BUILDER.comment("Spawn cooldown length in seconds").defineInRange("reset_calm_cooldown", 180, 0, 60 * 60 * 24);
+        RESET_CALM_COOLDOWN = BUILDER.comment("Spawn cooldown length in seconds").defineInRange("reset_calm_cooldown", 1200, 0, 60 * 60 * 24);
         BUILDER.pop();
 
         BUILDER.push("Sound Timers");
-        RESET_NOISE_MIN = BUILDER.comment("Minimum time between noise occurrences in seconds").defineInRange("reset_noise_min", 60, 0, 60 * 60 * 24);
-        RESET_NOISE_MAX = BUILDER.comment("Maximum time between noise occurrences in seconds").defineInRange("reset_noise_max", 120, 0, 60 * 60 * 24);
+        RESET_NOISE_MIN = BUILDER.comment("Minimum time between noise occurrences in seconds").defineInRange("reset_noise_min", 240, 0, 60 * 60 * 24);
+        RESET_NOISE_MAX = BUILDER.comment("Maximum time between noise occurrences in seconds").defineInRange("reset_noise_max", 360, 0, 60 * 60 * 24);
         BUILDER.pop();
 
         BUILDER.push("Spawn Conditions");
@@ -51,7 +51,7 @@ public class ServerConfig {
         SPAWN_HEIGHT = BUILDER.comment("Depth at which the Cave Dweller can start to spawn").define("spawn_height", 40);
         ALLOW_SURFACE_SPAWN = BUILDER.comment("Whether the Cave Dweller can spawn on the surface or not").define("allow_surface_spawn", false);
         SKY_LIGHT_LEVEL = BUILDER.comment("The maximum sky light level the Cave Dweller can spawn at").defineInRange("sky_light_level", 8, 0, 15);
-        BLOCK_LIGHT_LEVEL = BUILDER.comment("The maximum block light level the Cave Dweller can spawn at").defineInRange("block_light_level", 8, 0, 15);
+        BLOCK_LIGHT_LEVEL = BUILDER.comment("The maximum block light level the Cave Dweller can spawn at").defineInRange("block_light_level", 15, 0, 15);
         BUILDER.pop();
 
         BUILDER.push("Behaviour");

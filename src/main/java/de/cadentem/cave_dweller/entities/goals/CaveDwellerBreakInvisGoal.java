@@ -5,27 +5,27 @@ import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.player.Player;
 
 public class CaveDwellerBreakInvisGoal extends Goal {
-    private final CaveDwellerEntity caveDweller;
+    private final CaveDwellerEntity mob;
 
     private Player pendingTarget;
 
-    public CaveDwellerBreakInvisGoal(final CaveDwellerEntity caveDweller) {
-        this.caveDweller = caveDweller;
+    public CaveDwellerBreakInvisGoal(final CaveDwellerEntity mob) {
+        this.mob = mob;
     }
 
     @Override
     public boolean canUse() {
-        this.pendingTarget = this.caveDweller.level.getNearestPlayer(this.caveDweller, 200.0);
-        return caveDweller.isInvisible() && (!this.inPlayerLineOfSight() || !caveDweller.isLookingAtMe(pendingTarget));
+        pendingTarget = mob.level.getNearestPlayer(mob, 200.0);
+        return mob.isInvisible() && (!inPlayerLineOfSight() || !mob.isLookingAtMe(pendingTarget));
     }
 
     @Override
     public void start() {
         super.start();
-        this.caveDweller.setInvisible(false);
+        mob.setInvisible(false);
     }
 
     private boolean inPlayerLineOfSight() {
-        return this.pendingTarget != null && this.pendingTarget.hasLineOfSight(this.caveDweller);
+        return pendingTarget != null && pendingTarget.hasLineOfSight(mob);
     }
 }

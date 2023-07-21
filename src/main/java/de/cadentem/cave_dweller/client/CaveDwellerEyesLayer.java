@@ -25,6 +25,6 @@ public class CaveDwellerEyesLayer extends GeoLayerRenderer<CaveDwellerEntity> {
         RenderType eyesRenderType = RenderType.entityCutoutNoCull(TEXTURE);
         VertexConsumer vertexConsumer = bufferIn.getBuffer(eyesRenderType);
 
-        this.getRenderer().render(getEntityModel().getModel(getEntityModel().getModelResource(entityLivingBaseIn)), entityLivingBaseIn, partialTicks, eyesRenderType, matrixStackIn, bufferIn, vertexConsumer, packedLightIn, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+        getRenderer().render(getEntityModel().getModel(getEntityModel().getModelResource(entityLivingBaseIn)), entityLivingBaseIn, partialTicks, eyesRenderType, matrixStackIn, bufferIn, vertexConsumer, packedLightIn, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
     }
 }

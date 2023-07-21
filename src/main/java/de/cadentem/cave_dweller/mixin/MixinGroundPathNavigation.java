@@ -18,11 +18,11 @@ public abstract class MixinGroundPathNavigation extends PathNavigation {
 
     /**
      * Won't squeeze through 1x1 blocks without this<br>
-     * Only required due to the climbing mechanic - but checking for climbing here breaks other things
+     * Only required due to the climbing mechanic - but checking for climbing here seems to cause other issues
      */
     @Inject(method = "canUpdatePath", at = @At("RETURN"), cancellable = true)
     public void canUpdateWhenClimbing(final CallbackInfoReturnable<Boolean> cir) {
-        if (this.mob instanceof CaveDwellerEntity caveDweller) {
+        if (mob instanceof CaveDwellerEntity caveDweller) {
             if (!cir.getReturnValue() && caveDweller.fakeSize) {
                 cir.setReturnValue(true);
             }

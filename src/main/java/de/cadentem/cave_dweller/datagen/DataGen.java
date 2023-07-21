@@ -10,7 +10,7 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = CaveDweller.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class DataGen {
     @SubscribeEvent
-    public static void configureDataGen(GatherDataEvent event){
+    public static void configureDataGen(final GatherDataEvent event){
         DataGenerator generator = event.getGenerator();
         ExistingFileHelper existingFileHelper = event.getExistingFileHelper();
 

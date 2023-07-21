@@ -4,73 +4,75 @@ import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 
+import java.util.List;
 import java.util.Random;
 
 public class CaveDwellerStareGoal extends Goal {
-    private final CaveDwellerEntity caveDweller;
-    private float currentTicksTillLeave;
+    private final CaveDwellerEntity mob;
+    private float ticksUntilLeave;
     private boolean shouldLeave;
 
-    public CaveDwellerStareGoal(final CaveDwellerEntity caveDweller, float pTicksTillLeave) {
-        this.caveDweller = caveDweller;
-        this.currentTicksTillLeave = pTicksTillLeave;
+    public CaveDwellerStareGoal(final CaveDwellerEntity mob, float ticksUntilLeave) {
+        this.mob = mob;
+        this.ticksUntilLeave = ticksUntilLeave;
     }
 
     @Override
     public boolean canUse() {
-        if (this.caveDweller.isInvisible()) {
+        if (mob.isInvisible()) {
             return false;
-        } else if (this.caveDweller.getTarget() == null) {
+        } else if (mob.getTarget() == null) {
             return false;
         } else {
-            return this.caveDweller.reRollResult == 1;
+            return mob.reRollResult == 1;
         }
     }
 
     @Override
     public boolean canContinueToUse() {
-        if (this.caveDweller.getTarget() == null) {
+        if (mob.getTarget() == null) {
             return false;
         } else {
-            return this.caveDweller.reRollResult == 1;
+            return mob.reRollResult == 1;
         }
     }
 
     @Override
     public void start() {
-        this.shouldLeave = false;
+        shouldLeave = false;
     }
 
     @Override
     public void tick() {
-        this.tickStareClock();
-        LivingEntity target = this.caveDweller.getTarget();
+        tickStareClock();
+        LivingEntity target = mob.getTarget();
 
-        if (this.shouldLeave && (!this.caveDweller.isLookingAtMe(target) || !this.inPlayerLineOfSight())) {
-            if (new Random().nextDouble() < 0.5) {
-                this.caveDweller.reRoll();
-                stop();
-            } else {
-                this.caveDweller.playDisappearSound();
-                this.caveDweller.discard();
+        if (shouldLeave) {
+            if (new Random().nextDouble() < 0.1) {
+                mob.pickRoll(List.of(0, 2));
+
+            } else if (!mob.isLookingAtMe(target) || !inPlayerLineOfSight()) {
+                // Once the player stops looking at it
+                mob.playDisappearSound();
+                mob.discard();
             }
         }
 
         if (target != null) {
-            this.caveDweller.getLookControl().setLookAt(target, 180.0F, 1.0F);
+            mob.getLookControl().setLookAt(target);
         }
     }
 
     private void tickStareClock() {
-        --this.currentTicksTillLeave;
+        --ticksUntilLeave;
 
-        if (this.currentTicksTillLeave <= 0.0F) {
-            this.shouldLeave = true;
+        if (ticksUntilLeave <= 0.0F) {
+            shouldLeave = true;
         }
     }
 
     private boolean inPlayerLineOfSight() {
-        LivingEntity pendingTarget = this.caveDweller.getTarget();
-        return pendingTarget != null && pendingTarget.hasLineOfSight(this.caveDweller);
+        LivingEntity pendingTarget = mob.getTarget();
+        return pendingTarget != null && pendingTarget.hasLineOfSight(mob);
     }
 }

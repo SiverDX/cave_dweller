@@ -44,6 +44,7 @@ import software.bernie.geckolib3.core.manager.AnimationData;
 import software.bernie.geckolib3.core.manager.AnimationFactory;
 import software.bernie.geckolib3.util.GeckoLibUtil;
 
+import java.util.List;
 import java.util.Random;
 
 public class CaveDwellerEntity extends Monster implements IAnimatable {
@@ -135,23 +136,23 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
-        this.entityData.define(FLEEING_ACCESSOR, false);
-        this.entityData.define(CROUCHING_ACCESSOR, false);
-        this.entityData.define(AGGRO_ACCESSOR, false);
-        this.entityData.define(SQUEEZING_ACCESSOR, false);
-        this.entityData.define(SPOTTED_ACCESSOR, false);
-        this.entityData.define(CLIMBING_ACCESSOR, false);
+        entityData.define(FLEEING_ACCESSOR, false);
+        entityData.define(CROUCHING_ACCESSOR, false);
+        entityData.define(AGGRO_ACCESSOR, false);
+        entityData.define(SQUEEZING_ACCESSOR, false);
+        entityData.define(SPOTTED_ACCESSOR, false);
+        entityData.define(CLIMBING_ACCESSOR, false);
     }
 
     @Override
     protected void registerGoals() {
-        this.goalSelector.addGoal(1, new CaveDwellerStareGoal(this, Utils.secondsToTicks(ServerConfig.TIME_STARING.get())));
-        this.goalSelector.addGoal(1, new CaveDwellerChaseGoal(this,  0.85F, true, 20.0F));
-        this.goalSelector.addGoal(1, new CaveDwellerFleeGoal(this, 20.0F, 1.0));
-        this.goalSelector.addGoal(1, new CaveDwellerStrollGoal(this, 0.7));
-        this.goalSelector.addGoal(1, new CaveDwellerBreakInvisGoal(this));
-        this.targetSelector.addGoal(1, new CaveDwellerTargetTooCloseGoal(this, 12.0F));
-        this.targetSelector.addGoal(2, new CaveDwellerTargetSeesMeGoal(this));
+        goalSelector.addGoal(1, new CaveDwellerStareGoal(this, Utils.secondsToTicks(ServerConfig.TIME_STARING.get())));
+        goalSelector.addGoal(1, new CaveDwellerChaseGoal(this,  0.85F, true, 20.0F));
+        goalSelector.addGoal(1, new CaveDwellerFleeGoal(this, 20.0F, 1.0));
+        goalSelector.addGoal(1, new CaveDwellerStrollGoal(this, 0.7));
+        goalSelector.addGoal(1, new CaveDwellerBreakInvisGoal(this));
+        targetSelector.addGoal(1, new CaveDwellerTargetTooCloseGoal(this, 12.0F));
+        targetSelector.addGoal(2, new CaveDwellerTargetSeesMeGoal(this));
     }
 
     public Vec3 generatePos(final Entity player) {
@@ -170,10 +171,10 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             BlockPos blockPosition4 = new BlockPos(posX, posY - 1.0, posZ);
             --runFor;
 
-            if (!this.level.getBlockState(blockPosition).getMaterial().blocksMotion()
-                    && !this.level.getBlockState(blockPosition2).getMaterial().blocksMotion()
-                    && !this.level.getBlockState(blockPosition3).getMaterial().blocksMotion()
-                    && this.level.getBlockState(blockPosition4).getMaterial().blocksMotion()) {
+            if (!level.getBlockState(blockPosition).getMaterial().blocksMotion()
+                    && !level.getBlockState(blockPosition2).getMaterial().blocksMotion()
+                    && !level.getBlockState(blockPosition3).getMaterial().blocksMotion()
+                    && level.getBlockState(blockPosition4).getMaterial().blocksMotion()) {
                 break;
             }
         }
@@ -183,90 +184,104 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
 
     @Override
     public void tick() {
-        --this.ticksTillRemove;
+        --ticksTillRemove;
 
-        if (this.ticksTillRemove <= 0) {
-            this.discard();
+        if (ticksTillRemove <= 0) {
+            playDisappearSound();
+            discard();
         }
 
-        if (this.goalSelector.getAvailableGoals().isEmpty()) {
+        if (goalSelector.getAvailableGoals().isEmpty()) {
             registerGoals();
-            this.goalSelector.tick();
+            goalSelector.tick();
         }
 
-        BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos(this.position().x, this.position().y + 2.0, this.position().z);
-        BlockState above = this.level.getBlockState(blockpos$mutableblockpos);
+        BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos(position().x, position().y + 2.0, position().z);
+        BlockState above = level.getBlockState(blockpos$mutableblockpos);
         boolean blocksMotion = above.getMaterial().blocksMotion();
 
         if (blocksMotion) {
-            this.twoBlockSpaceTimer = this.twoBlockSpaceCooldown;
-            this.inTwoBlockSpace = true;
+            twoBlockSpaceTimer = twoBlockSpaceCooldown;
+            inTwoBlockSpace = true;
         } else {
-            --this.twoBlockSpaceTimer;
+            --twoBlockSpaceTimer;
 
-            if (this.twoBlockSpaceTimer <= 0.0F) {
-                this.inTwoBlockSpace = false;
+            if (twoBlockSpaceTimer <= 0.0F) {
+                inTwoBlockSpace = false;
             }
         }
 
-        if (this.isAggro || this.isFleeing) {
-            this.spottedByPlayer = false;
-            this.entityData.set(SPOTTED_ACCESSOR, false);
+        if (isAggro || isFleeing) {
+            spottedByPlayer = false;
+            entityData.set(SPOTTED_ACCESSOR, false);
         }
 
         super.tick();
 
-        this.entityData.set(CROUCHING_ACCESSOR, this.inTwoBlockSpace);
+        entityData.set(CROUCHING_ACCESSOR, inTwoBlockSpace);
 
-        if (this.entityData.get(SPOTTED_ACCESSOR)) {
-            this.playSpottedSound();
+        if (entityData.get(SPOTTED_ACCESSOR)) {
+            playSpottedSound();
         }
 
-        if (!this.level.isClientSide) {
-            this.setClimbing(this.horizontalCollision);
+        if (!level.isClientSide) {
+            setClimbing(horizontalCollision);
         }
     }
 
     @Override
     public @NotNull EntityDimensions getDimensions(@NotNull final Pose pose) {
-        if (this.isAggro) {
-            return this.fakeSize ? new EntityDimensions(0.5F, 0.9F, true) : new EntityDimensions(0.5F, 1.9F, true);
+        if (isAggro) {
+            return fakeSize ? new EntityDimensions(0.5F, 0.9F, true) : new EntityDimensions(0.5F, 1.9F, true);
         } else {
             return new EntityDimensions(0.5F, 1.9F, true);
         }
     }
 
     private boolean isMoving() {
-        Vec3 velocity = this.getDeltaMovement();
+        Vec3 velocity = getDeltaMovement();
         float avgVelocity = (float) (Math.abs(velocity.x) + Math.abs(velocity.z)) / 2.0F;
 
         return avgVelocity > 0.03F;
     }
 
     public void reRoll() {
-        this.reRollResult = this.random.nextInt(3);
+        reRollResult = new Random().nextInt(4);
+    }
+
+    public void pickRoll(@NotNull final List<Integer> rolls) {
+        reRollResult = rolls.get(new Random().nextInt(rolls.size()));
     }
 
     public Path createShortPath(final LivingEntity target) {
-        this.fakeSize = true;
-        this.refreshDimensions();
-        Path shortPath = this.getNavigation().createPath(target, 0);
-        this.fakeSize = false;
-        this.refreshDimensions();
+        fakeSize = true;
+        refreshDimensions();
+        Path shortPath = getNavigation().createPath(target, 0);
+        fakeSize = false;
+        refreshDimensions();
+        return shortPath;
+    }
+
+    public Path createShortPath(@NotNull final Vec3 position) {
+        fakeSize = true;
+        refreshDimensions();
+        Path shortPath = getNavigation().createPath(position.x, position.y, position.z, 0);
+        fakeSize = false;
+        refreshDimensions();
         return shortPath;
     }
 
     @Override
     public boolean onClimbable() {
-        return this.isClimbing();
+        return isClimbing();
     }
 
     public boolean isClimbing() {
-        return this.entityData.get(CLIMBING_ACCESSOR);
+        return entityData.get(CLIMBING_ACCESSOR);
     }
 
     public void setClimbing(boolean isClimbing) {
-        this.entityData.set(CLIMBING_ACCESSOR, isClimbing);
+        entityData.set(CLIMBING_ACCESSOR, isClimbing);
     }
 
     @Override
@@ -278,11 +293,11 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         AnimationBuilder builder = new AnimationBuilder();
         AnimationController<CaveDwellerEntity> controller = event.getController();
 
-        if (this.entityData.get(AGGRO_ACCESSOR)) {
-            if (this.entityData.get(SQUEEZING_ACCESSOR)) {
+        if (entityData.get(AGGRO_ACCESSOR)) {
+            if (entityData.get(SQUEEZING_ACCESSOR)) {
                 // Squeezing
                 builder.addAnimation(CRAWL.animationName, CRAWL.loopType);
-            } else if (this.entityData.get(CROUCHING_ACCESSOR)) {
+            } else if (entityData.get(CROUCHING_ACCESSOR)) {
                 // Crouching
                 if (event.isMoving()) {
                     builder.addAnimation(CROUCH_RUN.animationName, CROUCH_RUN.loopType);
@@ -297,14 +312,14 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
                     builder.addAnimation(CHASE_IDLE.animationName, CHASE_IDLE.loopType);
                 }
             }
-        } else if (this.entityData.get(FLEEING_ACCESSOR)) {
+        } else if (entityData.get(FLEEING_ACCESSOR)) {
             // Fleeing
             if (event.isMoving()) {
                 builder.addAnimation(FLEE.animationName, FLEE.loopType);
             } else {
                 builder.addAnimation(CHASE_IDLE.animationName, CHASE_IDLE.loopType);
             }
-        } else if (this.entityData.get(SPOTTED_ACCESSOR)) {
+        } else if (entityData.get(SPOTTED_ACCESSOR)) {
             // Spotted
             builder.addAnimation(IS_SPOTTED.animationName, IS_SPOTTED.loopType);
         } else {
@@ -327,77 +342,77 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
 
     @Override
     public AnimationFactory getFactory() {
-        return this.factory;
+        return factory;
     }
 
     @Override
     protected void playStepSound(@NotNull BlockPos pPos, @NotNull BlockState pState) {
         super.playStepSound(pPos, pState);
-        this.playEntitySound(this.chooseStep());
+        playEntitySound(chooseStep());
     }
 
     private void playEntitySound(SoundEvent soundEvent) {
-        this.playEntitySound(soundEvent, 1.0F, 1.0F);
+        playEntitySound(soundEvent, 1.0F, 1.0F);
     }
 
     private void playEntitySound(SoundEvent soundEvent, float volume, float pitch) {
-        this.level.playSound(null, this, soundEvent, SoundSource.HOSTILE, volume, pitch);
+        level.playSound(null, this, soundEvent, SoundSource.HOSTILE, volume, pitch);
     }
 
     // TODO :: Is this needed? Why not just playEntitySound
     private void playBlockPosSound(final ResourceLocation soundResource, float volume, float pitch) {
-        if (this.level instanceof ServerLevel serverLevel) {
+        if (level instanceof ServerLevel serverLevel) {
             int radius = 10; // blocks
             serverLevel.getPlayers(player -> player.distanceToSqr(this) <= radius * radius).forEach(player -> NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CaveSound(soundResource, player.blockPosition(), volume, pitch)));
         }
     }
 
     public void playChaseSound() {
-        if (this.startedPlayingChaseSound || this.isMoving()) {
-            if (this.chaseSoundClock <= 0) {
+        if (startedPlayingChaseSound || isMoving()) {
+            if (chaseSoundClock <= 0) {
                 Random rand = new Random();
 
                 switch (rand.nextInt(4)) {
-                    case 0 -> this.playEntitySound(ModSounds.CHASE_1.get(), 3.0F, 1.0F);
-                    case 1 -> this.playEntitySound(ModSounds.CHASE_2.get(), 3.0F, 1.0F);
-                    case 2 -> this.playEntitySound(ModSounds.CHASE_3.get(), 3.0F, 1.0F);
-                    case 3 -> this.playEntitySound(ModSounds.CHASE_4.get(), 3.0F, 1.0F);
+                    case 0 -> playEntitySound(ModSounds.CHASE_1.get(), 3.0F, 1.0F);
+                    case 1 -> playEntitySound(ModSounds.CHASE_2.get(), 3.0F, 1.0F);
+                    case 2 -> playEntitySound(ModSounds.CHASE_3.get(), 3.0F, 1.0F);
+                    case 3 -> playEntitySound(ModSounds.CHASE_4.get(), 3.0F, 1.0F);
                 }
 
-                this.startedPlayingChaseSound = true;
-                this.resetChaseSoundClock();
+                startedPlayingChaseSound = true;
+                resetChaseSoundClock();
             }
 
-            --this.chaseSoundClock;
+            --chaseSoundClock;
         }
     }
 
     public void playDisappearSound() {
-        this.playBlockPosSound(ModSounds.DISAPPEAR.get().getLocation(), 3.0F, 1.0F);
+        playBlockPosSound(ModSounds.DISAPPEAR.get().getLocation(), 3.0F, 1.0F);
     }
 
     public void playFleeSound() {
-        if (!this.alreadyPlayedFleeSound) {
+        if (!alreadyPlayedFleeSound) {
             Random rand = new Random();
 
             switch (rand.nextInt(2)) {
-                case 0 -> this.playEntitySound(ModSounds.FLEE_1.get(), 3.0F, 1.0F);
-                case 1 -> this.playEntitySound(ModSounds.FLEE_2.get(), 3.0F, 1.0F);
+                case 0 -> playEntitySound(ModSounds.FLEE_1.get(), 3.0F, 1.0F);
+                case 1 -> playEntitySound(ModSounds.FLEE_2.get(), 3.0F, 1.0F);
             }
 
-            this.alreadyPlayedFleeSound = true;
+            alreadyPlayedFleeSound = true;
         }
     }
 
     private void playSpottedSound() {
-        if (!this.alreadyPlayedSpottedSound) {
-            this.playEntitySound(ModSounds.SPOTTED.get(), 3.0F, 1.0F);
-            this.alreadyPlayedSpottedSound = true;
+        if (!alreadyPlayedSpottedSound) {
+            playEntitySound(ModSounds.SPOTTED.get(), 3.0F, 1.0F);
+            alreadyPlayedSpottedSound = true;
         }
     }
 
     private void resetChaseSoundClock() {
-        this.chaseSoundClock = Utils.secondsToTicks(5);
+        chaseSoundClock = Utils.secondsToTicks(5);
     }
 
     private SoundEvent chooseStep() {
@@ -424,17 +439,17 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
 
     @Override
     protected void playHurtSound(@NotNull final DamageSource pSource) {
-        SoundEvent soundevent = this.chooseHurtSound();
-        this.playEntitySound(soundevent, 2.0F, 1.0F);
+        SoundEvent soundevent = chooseHurtSound();
+        playEntitySound(soundevent, 2.0F, 1.0F);
     }
 
     @Override
     protected void tickDeath() {
         super.tickDeath();
 
-        if (!this.alreadyPlayedDeathSound) {
-            this.playBlockPosSound(ModSounds.DWELLER_DEATH.get().getLocation(), 2.0F, 1.0F);
-            this.alreadyPlayedDeathSound = true;
+        if (!alreadyPlayedDeathSound) {
+            playBlockPosSound(ModSounds.DWELLER_DEATH.get().getLocation(), 2.0F, 1.0F);
+            alreadyPlayedDeathSound = true;
         }
     }
 
@@ -448,12 +463,12 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             return false;
         }
 
-        if (player.getEyePosition(1).distanceTo(this.getPosition(1)) > ServerConfig.SPOTTING_RANGE.get()) {
+        if (player.getEyePosition(1).distanceTo(getPosition(1)) > ServerConfig.SPOTTING_RANGE.get()) {
             return false;
         }
 
         Vec3 viewVector = player.getViewVector(1.0F).normalize();
-        Vec3 difference = new Vec3(this.getX() - player.getX(), this.getEyeY() - player.getEyeY(), this.getZ() - player.getZ());
+        Vec3 difference = new Vec3(getX() - player.getX(), getEyeY() - player.getEyeY(), getZ() - player.getZ());
         double length = difference.length();
         difference = difference.normalize();
         double dot = viewVector.dot(difference);
@@ -463,7 +478,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
 
     @Override
     protected SoundEvent getHurtSound(@NotNull final DamageSource damageSourceIn) {
-        return this.chooseHurtSound();
+        return chooseHurtSound();
     }
 
     @Override

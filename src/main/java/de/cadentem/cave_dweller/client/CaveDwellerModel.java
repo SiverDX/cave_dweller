@@ -27,7 +27,7 @@ public class CaveDwellerModel extends AnimatedGeoModel<CaveDwellerEntity> {
 
     @Override
     public void setCustomAnimations(final CaveDwellerEntity animatable, int instanceId, final AnimationEvent animationEvent) {
-        IBone head = this.getAnimationProcessor().getBone("head");
+        IBone head = getAnimationProcessor().getBone("head");
 
         if (head != null) {
             EntityModelData entityData = (EntityModelData) animationEvent.getExtraDataOfType(EntityModelData.class).get(0);

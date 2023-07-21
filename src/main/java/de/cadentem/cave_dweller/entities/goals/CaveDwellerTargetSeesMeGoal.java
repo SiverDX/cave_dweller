@@ -10,50 +10,50 @@ public class CaveDwellerTargetSeesMeGoal extends NearestAttackableTargetGoal<Pla
 
     private Player pendingTarget;
 
-    public CaveDwellerTargetSeesMeGoal(final CaveDwellerEntity caveDweller) {
-        super(caveDweller, Player.class, false);
-        this.caveDweller = caveDweller;
+    public CaveDwellerTargetSeesMeGoal(final CaveDwellerEntity mob) {
+        super(mob, Player.class, false);
+        this.caveDweller = mob;
     }
 
     @Override
     public boolean canUse() {
-        if (this.caveDweller.isInvisible()) {
+        if (caveDweller.isInvisible()) {
             return false;
         } else {
-            this.setPendingTarget(this.caveDweller.level.getNearestPlayer(this.caveDweller, 200.0));
+            setPendingTarget(caveDweller.level.getNearestPlayer(caveDweller, 200.0));
 
-            if (this.pendingTarget == null) {
+            if (pendingTarget == null) {
                 return false;
-            } else if (this.pendingTarget.isCreative()) {
+            } else if (pendingTarget.isCreative()) {
                 return false;
             } else {
-                return this.inPlayerLineOfSight() && caveDweller.isLookingAtMe(pendingTarget);
+                return inPlayerLineOfSight() && caveDweller.isLookingAtMe(pendingTarget);
             }
         }
     }
 
     @Override
     public void start() {
-        super.target = this.pendingTarget;
-        this.caveDweller.setTarget(this.pendingTarget);
-        this.caveDweller.spottedByPlayer = true;
-        this.caveDweller.getEntityData().set(CaveDwellerEntity.SPOTTED_ACCESSOR, true);
-        this.caveDweller.reRoll(); // TODO :: Add reroll afer x seconds?
+        super.target = pendingTarget;
+        caveDweller.setTarget(pendingTarget);
+        caveDweller.spottedByPlayer = true;
+        caveDweller.getEntityData().set(CaveDwellerEntity.SPOTTED_ACCESSOR, true);
+        caveDweller.reRoll();
         super.start();
     }
 
     @Override
     public void stop() {
-        this.pendingTarget = null;
+        pendingTarget = null;
         super.stop();
     }
 
     @Override
     public boolean canContinueToUse() {
-        if (this.pendingTarget.isCreative()) {
+        if (pendingTarget.isCreative()) {
             return false;
         } else {
-            return this.pendingTarget != null;
+            return pendingTarget != null;
         }
     }
 
@@ -67,6 +67,6 @@ public class CaveDwellerTargetSeesMeGoal extends NearestAttackableTargetGoal<Pla
     }
 
     private boolean inPlayerLineOfSight() {
-        return this.pendingTarget != null && this.pendingTarget.hasLineOfSight(this.caveDweller);
+        return pendingTarget != null && pendingTarget.hasLineOfSight(caveDweller);
     }
 }

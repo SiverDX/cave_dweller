@@ -95,30 +95,30 @@ public class CaveDweller {
         entities.forEach(entity -> {
             if (entity instanceof CaveDwellerEntity) {
                 dwellerExists.set(true);
-                this.resetCalmTimer();
+                resetCalmTimer();
             }
         });
 
-        --this.noiseTimer;
-        if (this.noiseTimer <= 0 && (dwellerExists.get() || this.calmTimer <= Utils.secondsToTicks(ServerConfig.RESET_CALM_MAX.get()) / 2)) {
+        --noiseTimer;
+        if (noiseTimer <= 0 && (dwellerExists.get() || calmTimer <= Utils.secondsToTicks(ServerConfig.RESET_CALM_MAX.get()) / 2)) {
             overworld.getPlayers(this::playCaveSoundToSpelunkers);
-            this.resetNoiseTimer();
+            resetNoiseTimer();
         }
 
-        boolean canSpawn = this.calmTimer <= 0;
+        boolean canSpawn = calmTimer <= 0;
 
-        --this.calmTimer; // FIXME :: Maybe don't let this go too high (if server is running empty e.g.)
+        --calmTimer; // FIXME :: Maybe don't let this go too high (if server is running empty e.g.)
         if (canSpawn && !dwellerExists.get()) {
             Random random = new Random();
 
             if (random.nextDouble() <= ServerConfig.SPAWN_CHANCE_PER_TICK.get()) {
-                this.spelunkers.clear();
-                this.anySpelunkers = false;
+                spelunkers.clear();
+                anySpelunkers = false;
 
                 overworld.getPlayers(this::listSpelunkers);
 
-                if (this.anySpelunkers) {
-                    Player victim = this.spelunkers.get(random.nextInt(this.spelunkers.size()));
+                if (anySpelunkers) {
+                    Player victim = spelunkers.get(random.nextInt(spelunkers.size()));
                     overworld.getPlayers(this::playCaveSoundToSpelunkers);
 
                     CaveDwellerEntity caveDweller = new CaveDwellerEntity(ModEntityTypes.CAVE_DWELLER.get(), overworld);
@@ -126,17 +126,17 @@ public class CaveDweller {
                     caveDweller.setPos(caveDweller.generatePos(victim));
                     overworld.addFreshEntity(caveDweller);
 
-                    this.resetCalmTimer();
-                    this.resetNoiseTimer();
+                    resetCalmTimer();
+                    resetNoiseTimer();
                 }
             }
         }
     }
 
     private boolean listSpelunkers(final ServerPlayer player) {
-        if (this.isPlayerSpelunker(player)) {
-            this.anySpelunkers = true;
-            this.spelunkers.add(player);
+        if (isPlayerSpelunker(player)) {
+            anySpelunkers = true;
+            spelunkers.add(player);
         }
 
         return true;
@@ -201,15 +201,15 @@ public class CaveDweller {
 
     private void resetCalmTimer() {
         Random random = new Random();
-        this.calmTimer = random.nextInt(Utils.secondsToTicks(ServerConfig.RESET_CALM_MIN.get()), Utils.secondsToTicks(ServerConfig.RESET_CALM_MAX.get() + 1));
+        calmTimer = random.nextInt(Utils.secondsToTicks(ServerConfig.RESET_CALM_MIN.get()), Utils.secondsToTicks(ServerConfig.RESET_CALM_MAX.get() + 1));
 
         if (random.nextDouble() <= ServerConfig.RESET_CALM_COOLDOWN_CHANCE.get()) {
-            this.calmTimer = Utils.secondsToTicks(ServerConfig.RESET_CALM_COOLDOWN.get());
+            calmTimer = Utils.secondsToTicks(ServerConfig.RESET_CALM_COOLDOWN.get());
         }
     }
 
     private void resetNoiseTimer() {
         Random random = new Random();
-        this.noiseTimer = random.nextInt(Utils.secondsToTicks(ServerConfig.RESET_NOISE_MIN.get()), Utils.secondsToTicks(ServerConfig.RESET_NOISE_MAX.get() + 1));
+        noiseTimer = random.nextInt(Utils.secondsToTicks(ServerConfig.RESET_NOISE_MIN.get()), Utils.secondsToTicks(ServerConfig.RESET_NOISE_MAX.get() + 1));
     }
 }
