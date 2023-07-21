@@ -60,7 +60,7 @@ public class CaveDwellerFleeGoal extends Goal {
             mob.discard();
         }
 
-        tickFleeClock();
+        --ticksUntilFlee;
         tickStareClock();
 
         if (ticksUntilFlee <= 0.0F) {
@@ -100,10 +100,6 @@ public class CaveDwellerFleeGoal extends Goal {
         if (ticksUntilLeave < 0.0F) {
             shouldLeave = true;
         }
-    }
-
-    void tickFleeClock() {
-        --ticksUntilFlee;
     }
 
     public void fleeTick() {
