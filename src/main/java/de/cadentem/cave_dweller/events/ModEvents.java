@@ -16,7 +16,7 @@ import net.minecraftforge.fml.event.config.ModConfigEvent;
 public class ModEvents {
     @SubscribeEvent
     public static void entityAttributeEvent(final EntityAttributeCreationEvent event) {
-        event.put(ModEntityTypes.CAVE_DWELLER.get(), CaveDwellerEntity.getAttributeBuilder().build());
+        event.put(ModEntityTypes.CAVE_DWELLER.get(), CaveDwellerEntity.getAttributeBuilder());
     }
 
     @SubscribeEvent

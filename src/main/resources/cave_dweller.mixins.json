@@ -4,7 +4,8 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "cave_dweller.refmap.json",
   "mixins": [
-    "MixinGroundPathNavigation"
+    "MixinGroundPathNavigation",
+    "MixinLivingEntity"
   ],
   "client": [
   ],

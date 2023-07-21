@@ -2,6 +2,7 @@
 * Original mod features
 * Fixed some issues
 * Scuffed climbing (has no animation)
+* Cave Dweller has depth strider
 * Configs
 
 Recommend using https://www.curseforge.com/minecraft/texture-packs/creepier-cave-dwellers
@@ -11,6 +12,6 @@ Recommend using https://www.curseforge.com/minecraft/texture-packs/creepier-cave
 Requires GeckoLib: https://www.curseforge.com/minecraft/mc-mods/geckolib/files?version=1.19.2&gameVersionTypeId=1
 
 # TODO
-* More configs (entity attributes e.g.)
 * Add chance to flee when its on fire?
 * Extinguish light sources in a certain radius around the mob?
+* When looking at it for too long chase anyway independent of distance to target

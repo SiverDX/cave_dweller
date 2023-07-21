@@ -1,6 +1,8 @@
 package de.cadentem.cave_dweller.entities.goals;
 
+import de.cadentem.cave_dweller.config.ServerConfig;
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
+import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntitySelector;
@@ -24,7 +26,7 @@ public class CaveDwellerChaseGoal extends Goal {
     private int ticksUntilNextPathRecalculation;
     private int ticksUntilNextAttack;
     private int failedPathFindingPenalty = 0;
-    private final boolean canPenalize = false;
+    private final boolean canPenalize = false; // TODO :: Add config?
     private final float ticksTillChase;
     private float currentTicksTillChase;
     private boolean shouldUseShortPath = false;
@@ -54,7 +56,7 @@ public class CaveDwellerChaseGoal extends Goal {
         this.vecNodePos = null;
         this.ticksToSqueeze = 15;
         this.nodePos = null;
-        this.currentTicksTillLeave = 600; // TODO :: Config option
+        this.currentTicksTillLeave = Utils.secondsToTicks(ServerConfig.TIME_UNTIL_LEAVE_CHASE.get());
     }
 
     @Override
@@ -70,7 +72,6 @@ public class CaveDwellerChaseGoal extends Goal {
                 return false;
             } else {
                 lastGameTimeCheck = ticks;
-
                 LivingEntity target = this.mob.getTarget();
 
                 Path path;
@@ -93,7 +94,15 @@ public class CaveDwellerChaseGoal extends Goal {
                     if (path != null) {
                         return true;
                     } else {
-                        return this.getAttackReachSqr(target) >= this.mob.distanceToSqr(target.getX(), target.getY(), target.getZ());
+                        boolean canAttack = this.getAttackReachSqr(target) >= this.mob.distanceToSqr(target.getX(), target.getY(), target.getZ());
+
+                        if (!canAttack) {
+                            path = this.mob.createShortPath(target);
+
+                            return path != null;
+                        }
+
+                        return false;
                     }
                 }
             }
@@ -347,6 +356,7 @@ public class CaveDwellerChaseGoal extends Goal {
         }
 
         if (this.shouldUseShortPath) {
+            // No normal path could be found, try with smaller size
             path = this.getShortPath(target);
         }
 

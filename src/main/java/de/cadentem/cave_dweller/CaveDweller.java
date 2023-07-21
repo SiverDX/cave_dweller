@@ -11,13 +11,15 @@ import de.cadentem.cave_dweller.registry.ModItems;
 import de.cadentem.cave_dweller.registry.ModSounds;
 import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.client.renderer.entity.EntityRenderers;
-import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.lighting.LayerLightEventListener;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -40,7 +42,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Mod(CaveDweller.MODID)
 public class CaveDweller {
     public static final String MODID = "cave_dweller";
-    private static final Logger LOGGER = LogUtils.getLogger();
+    public static final Logger LOG = LogUtils.getLogger();
 
     private boolean initialized; // TODO :: Currently needed since config values are not present at server start
     private int calmTimer;
@@ -100,11 +102,12 @@ public class CaveDweller {
         --this.noiseTimer;
         if (this.noiseTimer <= 0 && (dwellerExists.get() || this.calmTimer <= Utils.secondsToTicks(ServerConfig.RESET_CALM_MAX.get()) / 2)) {
             overworld.getPlayers(this::playCaveSoundToSpelunkers);
+            this.resetNoiseTimer();
         }
 
         boolean canSpawn = this.calmTimer <= 0;
 
-        --this.calmTimer;
+        --this.calmTimer; // FIXME :: Maybe don't let this go too high (if server is running empty e.g.)
         if (canSpawn && !dwellerExists.get()) {
             Random random = new Random();
 
@@ -122,7 +125,9 @@ public class CaveDweller {
                     caveDweller.setInvisible(true);
                     caveDweller.setPos(caveDweller.generatePos(victim));
                     overworld.addFreshEntity(caveDweller);
+
                     this.resetCalmTimer();
+                    this.resetNoiseTimer();
                 }
             }
         }
@@ -152,24 +157,51 @@ public class CaveDweller {
         };
 
         NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CaveSound(soundLocation, player.blockPosition(), 2.0F, 1.0F));
-        this.resetNoiseTimer();
 
         return true;
     }
 
-    public boolean isPlayerSpelunker(final Player player) {
+    public boolean isPlayerSpelunker(final ServerPlayer player) {
         if (player == null) {
             return false;
         } else {
-            Level level = player.getLevel();
-            BlockPos playerBlockPos = new BlockPos(player.position().x, player.position().y, player.position().z);
-            return player.position().y < ServerConfig.SPAWN_HEIGHT.get() && (ServerConfig.ALLOW_SURFACE_SPAWN.get() || !level.canSeeSky(playerBlockPos));
+            // Height level check
+            if (player.position().y > ServerConfig.SPAWN_HEIGHT.get()) {
+                return false;
+            }
+
+            ServerLevel serverLevel = player.getLevel();
+
+            // Sky light level check
+            // Referenced from DaylightDetectorBlock
+            int skyLightLevel = serverLevel.getBrightness(LightLayer.SKY, player.blockPosition()) - serverLevel.getSkyDarken();
+            float sunAngle = serverLevel.getSunAngle(1.0F);
+            if (skyLightLevel > 0) {
+                float f1 = sunAngle < (float) Math.PI ? 0.0F : ((float) Math.PI * 2F);
+                sunAngle += (f1 - sunAngle) * 0.2F;
+                skyLightLevel = Math.round((float) skyLightLevel * Mth.cos(sunAngle));
+            }
+
+            skyLightLevel = Mth.clamp(skyLightLevel, 0, 15);
+
+            if (skyLightLevel > ServerConfig.SKY_LIGHT_LEVEL.get()) {
+                return false;
+            }
+
+            // Block light level check
+            LayerLightEventListener blockLighting = player.getLevel().getLightEngine().getLayerListener(LightLayer.BLOCK);
+
+            if (blockLighting.getLightValue(player.blockPosition()) > ServerConfig.BLOCK_LIGHT_LEVEL.get()) {
+                return false;
+            }
+
+            return (ServerConfig.ALLOW_SURFACE_SPAWN.get() || !player.getLevel().canSeeSky(player.blockPosition()));
         }
     }
 
     private void resetCalmTimer() {
         Random random = new Random();
-        this.calmTimer = random.nextInt(Utils.secondsToTicks(ServerConfig.RESET_CALM_MIN.get()), Utils.secondsToTicks(ServerConfig.RESET_CALM_MAX.get()));
+        this.calmTimer = random.nextInt(Utils.secondsToTicks(ServerConfig.RESET_CALM_MIN.get()), Utils.secondsToTicks(ServerConfig.RESET_CALM_MAX.get() + 1));
 
         if (random.nextDouble() <= ServerConfig.RESET_CALM_COOLDOWN_CHANCE.get()) {
             this.calmTimer = Utils.secondsToTicks(ServerConfig.RESET_CALM_COOLDOWN.get());
@@ -178,6 +210,6 @@ public class CaveDweller {
 
     private void resetNoiseTimer() {
         Random random = new Random();
-        this.noiseTimer = random.nextInt(Utils.secondsToTicks(ServerConfig.RESET_NOISE_MIN.get()), Utils.secondsToTicks(ServerConfig.RESET_NOISE_MAX.get()));
+        this.noiseTimer = random.nextInt(Utils.secondsToTicks(ServerConfig.RESET_NOISE_MIN.get()), Utils.secondsToTicks(ServerConfig.RESET_NOISE_MAX.get() + 1));
     }
 }

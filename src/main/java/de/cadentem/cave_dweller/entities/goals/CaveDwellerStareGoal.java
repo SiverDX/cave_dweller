@@ -4,6 +4,8 @@ import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 
+import java.util.Random;
+
 public class CaveDwellerStareGoal extends Goal {
     private final CaveDwellerEntity caveDweller;
     private float currentTicksTillLeave;
@@ -45,8 +47,13 @@ public class CaveDwellerStareGoal extends Goal {
         LivingEntity target = this.caveDweller.getTarget();
 
         if (this.shouldLeave && (!this.caveDweller.isLookingAtMe(target) || !this.inPlayerLineOfSight())) {
-            this.caveDweller.playDisappearSound();
-            this.caveDweller.discard();
+            if (new Random().nextDouble() < 0.5) {
+                this.caveDweller.reRoll();
+                stop();
+            } else {
+                this.caveDweller.playDisappearSound();
+                this.caveDweller.discard();
+            }
         }
 
         if (target != null) {

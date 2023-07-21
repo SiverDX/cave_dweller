@@ -1,11 +1,13 @@
 package de.cadentem.cave_dweller.entities;
 
+import de.cadentem.cave_dweller.config.ServerConfig;
 import de.cadentem.cave_dweller.entities.goals.*;
 import de.cadentem.cave_dweller.network.CaveSound;
 import de.cadentem.cave_dweller.network.NetworkHandler;
 import de.cadentem.cave_dweller.registry.ModSounds;
 import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -13,8 +15,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
@@ -22,11 +26,13 @@ import net.minecraft.world.entity.ai.navigation.WallClimberNavigation;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib3.core.IAnimatable;
 import software.bernie.geckolib3.core.PlayState;
 import software.bernie.geckolib3.core.builder.AnimationBuilder;
@@ -44,7 +50,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     private final AnimationFactory factory = GeckoLibUtil.createFactory(this);
 
     public int reRollResult = 3;
-    public boolean isAggro;
+    public boolean isAggro; // FIXME :: replace with setAggro etc.
     public boolean fakeSize = false;
     private boolean inTwoBlockSpace = false;
     public boolean spottedByPlayer = false;
@@ -82,19 +88,48 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
 
     public CaveDwellerEntity(final EntityType<? extends CaveDwellerEntity> entityType, final Level level) {
         super(entityType, level);
-        this.maxUpStep = 1.0F;
+        this.maxUpStep = 1.0F; // TODO :: Use Attribute?
         this.refreshDimensions();
         this.twoBlockSpaceCooldown = 5.0F;
-        this.ticksTillRemove = 6000; // TODO :: Config option
+        this.ticksTillRemove = Utils.secondsToTicks(ServerConfig.TIME_UNTIL_LEAVE_CHASE.get());
     }
 
-    public static AttributeSupplier.Builder getAttributeBuilder() {
+    @Override
+    public @Nullable SpawnGroupData finalizeSpawn(@NotNull final ServerLevelAccessor level, @NotNull final DifficultyInstance difficulty, @NotNull final MobSpawnType reason, @Nullable final SpawnGroupData spawnData, @Nullable final CompoundTag tagData) {
+        setAttribute(getAttribute(Attributes.MAX_HEALTH), ServerConfig.MAX_HEALTH.get());
+        setAttribute(getAttribute(Attributes.ATTACK_DAMAGE), ServerConfig.ATTACK_DAMAGE.get());
+        setAttribute(getAttribute(Attributes.ATTACK_SPEED), ServerConfig.ATTACK_SPEED.get());
+        setAttribute(getAttribute(Attributes.MOVEMENT_SPEED), ServerConfig.MOVEMENT_SPEED.get());
+
+        return super.finalizeSpawn(level, difficulty, reason, spawnData, tagData);
+    }
+
+    private void setAttribute(final AttributeInstance attribute, double value) {
+        if (attribute != null) {
+            attribute.setBaseValue(value);
+
+            if (attribute.getAttribute() == Attributes.MAX_HEALTH) {
+                setHealth((float) value);
+            } else if (attribute.getAttribute() == Attributes.MOVEMENT_SPEED) {
+                setSpeed((float) value);
+            }
+        }
+    }
+
+    public static AttributeSupplier getAttributeBuilder() {
+        double maxHealth = 60.0;
+        double attackDamage = 6.0;
+        double attackSpeed = 0.35;
+        double movementSpeed = 0.5;
+        double followRange = 100.0;
+
         return CaveDwellerEntity.createMobAttributes()
-                .add(Attributes.MAX_HEALTH, 60.0)
-                .add(Attributes.ATTACK_DAMAGE, 6.0)
-                .add(Attributes.ATTACK_SPEED, 0.35)
-                .add(Attributes.MOVEMENT_SPEED, 0.5)
-                .add(Attributes.FOLLOW_RANGE, 100.0);
+                .add(Attributes.MAX_HEALTH, maxHealth)
+                .add(Attributes.ATTACK_DAMAGE, attackDamage)
+                .add(Attributes.ATTACK_SPEED, attackSpeed)
+                .add(Attributes.MOVEMENT_SPEED, movementSpeed)
+                .add(Attributes.FOLLOW_RANGE, followRange)
+                .build();
     }
 
     @Override
@@ -110,7 +145,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
 
     @Override
     protected void registerGoals() {
-        this.goalSelector.addGoal(1, new CaveDwellerStareGoal(this, 100.0F));
+        this.goalSelector.addGoal(1, new CaveDwellerStareGoal(this, Utils.secondsToTicks(ServerConfig.TIME_STARING.get())));
         this.goalSelector.addGoal(1, new CaveDwellerChaseGoal(this,  0.85F, true, 20.0F));
         this.goalSelector.addGoal(1, new CaveDwellerFleeGoal(this, 20.0F, 1.0));
         this.goalSelector.addGoal(1, new CaveDwellerStrollGoal(this, 0.7));
@@ -118,8 +153,6 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         this.targetSelector.addGoal(1, new CaveDwellerTargetTooCloseGoal(this, 12.0F));
         this.targetSelector.addGoal(2, new CaveDwellerTargetSeesMeGoal(this));
     }
-
-    // TODO :: getStandingEyeHeight
 
     public Vec3 generatePos(final Entity player) {
         Vec3 playerPos = player.position();
@@ -415,9 +448,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             return false;
         }
 
-        double maximumDistance = 20; // blocks // TODO :: Config?
-
-        if (player.getEyePosition(1).distanceTo(this.getPosition(1)) > maximumDistance) {
+        if (player.getEyePosition(1).distanceTo(this.getPosition(1)) > ServerConfig.SPOTTING_RANGE.get()) {
             return false;
         }
 
