@@ -1,3 +1,5 @@
+**CurseForge**: https://www.curseforge.com/minecraft/mc-mods/cave-dweller-evolved
+
 # Features
 * Original mod features
 * Fixed some issues
