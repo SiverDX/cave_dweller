@@ -44,11 +44,12 @@ public class CaveDweller {
     public static final String MODID = "cave_dweller";
     public static final Logger LOG = LogUtils.getLogger();
 
-    private boolean initialized; // TODO :: Currently needed since config values are not present at server start
+    private final List<Player> spelunkers = new ArrayList<>();
+    private final Random random = new Random();
+
+    private boolean initialized; // TODO :: Currently needed since config values are not present at server start up
     private int calmTimer;
     private int noiseTimer;
-    private boolean anySpelunkers = false;
-    private final List<Player> spelunkers = new ArrayList<>();
 
     public CaveDweller() {
         GeckoLib.initialize();
@@ -109,15 +110,12 @@ public class CaveDweller {
 
         --calmTimer; // FIXME :: Maybe don't let this go too high (if server is running empty e.g.)
         if (canSpawn && !dwellerExists.get()) {
-            Random random = new Random();
-
             if (random.nextDouble() <= ServerConfig.SPAWN_CHANCE_PER_TICK.get()) {
                 spelunkers.clear();
-                anySpelunkers = false;
 
                 overworld.getPlayers(this::listSpelunkers);
 
-                if (anySpelunkers) {
+                if (!spelunkers.isEmpty()) {
                     Player victim = spelunkers.get(random.nextInt(spelunkers.size()));
                     overworld.getPlayers(this::playCaveSoundToSpelunkers);
 
@@ -135,7 +133,6 @@ public class CaveDweller {
 
     private boolean listSpelunkers(final ServerPlayer player) {
         if (isPlayerSpelunker(player)) {
-            anySpelunkers = true;
             spelunkers.add(player);
         }
 
@@ -147,9 +144,8 @@ public class CaveDweller {
             return false;
         }
 
-        Random rand = new Random();
         // TODO :: Play the same sound to all players?
-        ResourceLocation soundLocation = switch (rand.nextInt(4)) {
+        ResourceLocation soundLocation = switch (random.nextInt(4)) {
             case 1 -> ModSounds.CAVENOISE_2.get().getLocation();
             case 2 -> ModSounds.CAVENOISE_3.get().getLocation();
             case 3 -> ModSounds.CAVENOISE_4.get().getLocation();
@@ -165,6 +161,10 @@ public class CaveDweller {
         if (player == null) {
             return false;
         } else {
+            if (player.isCreative() || player.isSpectator()) {
+                return false;
+            }
+
             // Height level check
             if (player.position().y > ServerConfig.SPAWN_HEIGHT.get()) {
                 return false;
@@ -200,16 +200,14 @@ public class CaveDweller {
     }
 
     private void resetCalmTimer() {
-        Random random = new Random();
-        calmTimer = random.nextInt(Utils.secondsToTicks(ServerConfig.RESET_CALM_MIN.get()), Utils.secondsToTicks(ServerConfig.RESET_CALM_MAX.get() + 1));
-
         if (random.nextDouble() <= ServerConfig.RESET_CALM_COOLDOWN_CHANCE.get()) {
             calmTimer = Utils.secondsToTicks(ServerConfig.RESET_CALM_COOLDOWN.get());
+        } else {
+            calmTimer = random.nextInt(Utils.secondsToTicks(ServerConfig.RESET_CALM_MIN.get()), Utils.secondsToTicks(ServerConfig.RESET_CALM_MAX.get() + 1));
         }
     }
 
     private void resetNoiseTimer() {
-        Random random = new Random();
         noiseTimer = random.nextInt(Utils.secondsToTicks(ServerConfig.RESET_NOISE_MIN.get()), Utils.secondsToTicks(ServerConfig.RESET_NOISE_MAX.get() + 1));
     }
 }

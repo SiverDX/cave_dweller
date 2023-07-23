@@ -57,9 +57,9 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     public boolean spottedByPlayer = false;
     public boolean squeezeCrawling = false;
     public boolean isFleeing;
-    public boolean startedMovingChase = false;
     private int ticksTillRemove;
 
+    // TODO :: 2 unused animations
     private final RawAnimation OLD_RUN = new RawAnimation("animation.cave_dweller.run", ILoopType.EDefaultLoopTypes.LOOP);
     private final RawAnimation IDLE = new RawAnimation("animation.cave_dweller.idle", ILoopType.EDefaultLoopTypes.LOOP);
     private final RawAnimation CHASE = new RawAnimation("animation.cave_dweller.new_run", ILoopType.EDefaultLoopTypes.LOOP);
