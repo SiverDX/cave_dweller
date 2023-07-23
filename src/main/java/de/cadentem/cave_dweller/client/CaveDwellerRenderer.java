@@ -8,14 +8,14 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
-import software.bernie.geckolib3.renderers.geo.GeoEntityRenderer;
+import software.bernie.geckolib.renderer.GeoEntityRenderer;
 
 public class CaveDwellerRenderer extends GeoEntityRenderer<CaveDwellerEntity> {
     public CaveDwellerRenderer(final EntityRendererProvider.Context context) {
         super(context, new CaveDwellerModel());
         this.shadowRadius = 0.3F;
 
-        addLayer(new CaveDwellerEyesLayer(this));
+        addRenderLayer(new CaveDwellerEyesLayer(this));
     }
 
     @Override // TODO :: Is this even used?

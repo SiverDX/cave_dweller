@@ -9,22 +9,22 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
-import software.bernie.geckolib3.renderers.geo.GeoLayerRenderer;
-import software.bernie.geckolib3.renderers.geo.IGeoRenderer;
+import software.bernie.geckolib.cache.object.BakedGeoModel;
+import software.bernie.geckolib.renderer.GeoRenderer;
+import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 
-public class CaveDwellerEyesLayer extends GeoLayerRenderer<CaveDwellerEntity> {
+public class CaveDwellerEyesLayer extends GeoRenderLayer<CaveDwellerEntity> {
     public static ResourceLocation TEXTURE = new ResourceLocation(CaveDweller.MODID, "textures/entity/cave_dweller_eyes_texture" + Utils.getTextureAppend() + ".png");
 
-    public CaveDwellerEyesLayer(final IGeoRenderer<CaveDwellerEntity> renderer) {
+    public CaveDwellerEyesLayer(final GeoRenderer<CaveDwellerEntity> renderer) {
         super(renderer);
     }
 
     @Override
-    public void render(final PoseStack matrixStackIn, final MultiBufferSource bufferIn, int packedLightIn, final CaveDwellerEntity entityLivingBaseIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
-        packedLightIn = 15728880;
+    public void render(final PoseStack poseStack, final CaveDwellerEntity animatable, final BakedGeoModel bakedModel, final RenderType renderType, final MultiBufferSource bufferSource, final VertexConsumer buffer, float partialTick, int packedLight, int packedOverlay) {
+        packedLight = 15728880;
         RenderType eyesRenderType = RenderType.entityCutoutNoCull(TEXTURE);
-        VertexConsumer vertexConsumer = bufferIn.getBuffer(eyesRenderType);
 
-        getRenderer().render(getEntityModel().getModel(getEntityModel().getModelResource(entityLivingBaseIn)), entityLivingBaseIn, partialTicks, eyesRenderType, matrixStackIn, bufferIn, vertexConsumer, packedLightIn, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+        this.getRenderer().reRender(getDefaultBakedModel(animatable), poseStack, bufferSource, animatable, eyesRenderType, bufferSource.getBuffer(eyesRenderType), partialTick, packedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
     }
 }

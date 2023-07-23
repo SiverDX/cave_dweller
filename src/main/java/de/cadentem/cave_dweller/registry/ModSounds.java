@@ -34,7 +34,7 @@ public class ModSounds {
 
     private static RegistryObject<SoundEvent> registerSoundEvent(final String name) {
         ResourceLocation id = new ResourceLocation(CaveDweller.MODID, name);
-        return SOUND_EVENTS.register(name, () -> new SoundEvent(id));
+        return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(id));
     }
 
     public static void register(IEventBus eventBus) {

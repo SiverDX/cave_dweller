@@ -14,6 +14,6 @@ public class DataGen {
         DataGenerator generator = event.getGenerator();
         ExistingFileHelper existingFileHelper = event.getExistingFileHelper();
 
-        generator.addProvider(true, new ModItemModelProvider(generator, CaveDweller.MODID, existingFileHelper));
+        generator.addProvider(true, new ModItemModelProvider(generator.getPackOutput(), CaveDweller.MODID, existingFileHelper));
     }
 }
