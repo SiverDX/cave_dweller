@@ -20,7 +20,7 @@ plugins {
 apply plugin: 'org.spongepowered.mixin'
 
 group = mod_group_id
-version = mod_version
+version = minecraft_version + "-" + mod_version
 
 base {
     archivesName = mod_id
@@ -117,7 +117,7 @@ tasks.named('jar', Jar).configure {
                 "Specification-Vendor": mod_authors,
                 "Specification-Version": "1", // We are version 1 of ourselves
                 "Implementation-Title": project.name,
-                "Implementation-Version": project.jar.archiveVersion,
+                "Implementation-Version": mod_version,
                 "Implementation-Vendor": mod_authors,
                 "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
         ])
