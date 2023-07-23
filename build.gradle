@@ -31,7 +31,7 @@ java {
 }
 
 minecraft {
-    mappings channel: "${mapping_channel}", version: "${mapping_version}-${minecraft_version}"
+    mappings channel: "${mapping_channel}", version: "${mapping_version}-${mapping_mc_version}"
 
     copyIdeResources = true
 
@@ -101,6 +101,7 @@ tasks.named('processResources', ProcessResources).configure {
             loader_version_range: loader_version_range,
             mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
             mod_authors: mod_authors, mod_description: mod_description,
+            geckolib_version_range: geckolib_version_range
     ]
 
     inputs.properties replaceProperties
