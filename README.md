@@ -19,6 +19,8 @@ Recommend using https://www.curseforge.com/minecraft/texture-packs/creepier-cave
 ## Bugs
 * Rails / half blocks break squeezing
 * Hitbox too small
+* It sometimes moves (stroll goal?) while being looked at
+* 1.19.2 - 1.20 logic ticks twice (START and END phase) (affects spawn and noise timers)
 
 ## Ideas
 * Add chance to flee when its on fire
