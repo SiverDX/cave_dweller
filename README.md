@@ -17,15 +17,15 @@ Recommend using https://www.curseforge.com/minecraft/texture-packs/creepier-cave
 
 # To Consider
 ## Bugs
-* Rails / half blocks cause problems with squeezing
+* Rails / half blocks break squeezing
 * Hitbox too small
-* It sometimes moves while being looked at
+* It sometimes moves (stroll goal?) while being looked at
+* 1.19.2 - 1.20 logic ticks twice (START and END phase) (affects spawn and noise timers)
 
 ## Ideas
 * Add chance to flee when its on fire
 * Extinguish light sources in a certain radius around the mob
 * More configs
+  * Disable climbing
   * Modify action chance (when staring timer is finished)
-  * Disable mounting behaviour (e.g. being placed in a boat)
-* Teleport to a free location if it gets stuck / takes suffocation damage
-* Trigger chase as retaliation
+* Break down doors
