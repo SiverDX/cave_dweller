@@ -11,17 +11,17 @@ import software.bernie.geckolib3.model.provider.data.EntityModelData;
 
 public class CaveDwellerModel extends AnimatedGeoModel<CaveDwellerEntity> {
     @Override
-    public ResourceLocation getModelResource(final CaveDwellerEntity ignored) {
+    public ResourceLocation getModelLocation(final CaveDwellerEntity ignored) {
         return new ResourceLocation(CaveDweller.MODID, "geo/cave_dweller.geo" + Utils.getTextureAppend() + ".json");
     }
 
     @Override
-    public ResourceLocation getTextureResource(final CaveDwellerEntity ignored) {
+    public ResourceLocation getTextureLocation(final CaveDwellerEntity ignored) {
         return new ResourceLocation(CaveDweller.MODID, "textures/entity/cave_dweller_texture" + Utils.getTextureAppend() + ".png");
     }
 
     @Override
-    public ResourceLocation getAnimationResource(final CaveDwellerEntity ignored) {
+    public ResourceLocation getAnimationFileLocation(final CaveDwellerEntity ignored) {
         return new ResourceLocation(CaveDweller.MODID, "animations/cave_dweller.animation.json");
     }
 

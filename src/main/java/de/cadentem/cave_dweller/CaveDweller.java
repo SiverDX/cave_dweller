@@ -12,6 +12,7 @@ import de.cadentem.cave_dweller.registry.ModSounds;
 import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
@@ -77,14 +78,26 @@ public class CaveDweller {
     }
 
     @SubscribeEvent
-    public void serverTick(final TickEvent.ServerTickEvent event) {
+    public void serverTick(final TickEvent.WorldTickEvent event) {
+        if (event.phase == TickEvent.Phase.END) {
+            // TODO :: Not sure if the tick should happen on START or END
+            return;
+        }
+
         if (!initialized) {
             resetNoiseTimer();
             resetCalmTimer();
             initialized = true;
         }
 
-        ServerLevel overworld = event.getServer().getLevel(Level.OVERWORLD);
+        MinecraftServer server = event.world.getServer();
+
+        if (server == null) {
+            LOG.debug("Server was null within the `serverTick`");
+            return;
+        }
+
+        ServerLevel overworld = server.getLevel(Level.OVERWORLD);
 
         if (overworld == null) {
             return;
