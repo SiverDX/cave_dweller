@@ -1,11 +1,10 @@
 package de.cadentem.cave_dweller.registry;
 
 import de.cadentem.cave_dweller.CaveDweller;
-import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.common.ForgeSpawnEggItem;
-import net.minecraftforge.event.CreativeModeTabEvent;
+import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -21,8 +20,8 @@ public class ModItems {
         ITEMS.register(eventBus);
     }
 
-    public static void addCreative(final CreativeModeTabEvent.BuildContents event) {
-        if (event.getTab() != CreativeModeTabs.INGREDIENTS && event.getTab() == CreativeModeTabs.SPAWN_EGGS) {
+    public static void addCreative(final BuildCreativeModeTabContentsEvent event) {
+        if (event.getTabKey() == CreativeModeTabs.SPAWN_EGGS) {
             event.accept(ModItems.CAVE_DWELLER_SPAWN_EGG);
         }
     }

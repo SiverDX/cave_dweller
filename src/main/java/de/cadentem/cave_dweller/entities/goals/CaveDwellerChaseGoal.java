@@ -63,7 +63,7 @@ public class CaveDwellerChaseGoal extends Goal {
         } else if (mob.reRollResult != 0) {
             return false;
         } else {
-            long ticks = mob.level.getGameTime();
+            long ticks = mob.level().getGameTime();
 
             if (ticks - lastGameTimeCheck < 20) {
                 return false;
@@ -244,12 +244,12 @@ public class CaveDwellerChaseGoal extends Goal {
 
             BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos(xPathTargetVec.x, xPathTargetVec.y, xPathTargetVec.z);
 
-            BlockState blockstate = mob.level.getBlockState(blockpos$mutableblockpos);
-            boolean xBlocked = blockstate.getMaterial().blocksMotion();
+            BlockState blockstate = mob.level().getBlockState(blockpos$mutableblockpos);
+            boolean xBlocked = blockstate.blocksMotion();
 
             blockpos$mutableblockpos = new BlockPos.MutableBlockPos(zPathTargetVec.x, zPathTargetVec.y, zPathTargetVec.z);
-            blockstate = mob.level.getBlockState(blockpos$mutableblockpos);
-            boolean zBlocked = blockstate.getMaterial().blocksMotion();
+            blockstate = mob.level().getBlockState(blockpos$mutableblockpos);
+            boolean zBlocked = blockstate.blocksMotion();
 
             if (xBlocked) {
                 vecMobPos = zPathStartVec;
@@ -323,8 +323,8 @@ public class CaveDwellerChaseGoal extends Goal {
                 if (previousNodePosition != null && blockPosition.getX() == (int) previousNodePosition.x && blockPosition.getY() == (int) previousNodePosition.y && blockPosition.getZ() == (int) previousNodePosition.z) {
                     return false;
                 } else {
-                    BlockState blockstate = mob.level.getBlockState(blockPosition.above());
-                    return blockstate.getMaterial().blocksMotion();
+                    BlockState blockstate = mob.level().getBlockState(blockPosition.above());
+                    return blockstate.blocksMotion();
                 }
             } else {
                 return false;

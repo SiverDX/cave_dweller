@@ -30,6 +30,7 @@ import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -88,7 +89,6 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
 
     public CaveDwellerEntity(final EntityType<? extends CaveDwellerEntity> entityType, final Level level) {
         super(entityType, level);
-        this.maxUpStep = 1.0F; // TODO :: Use Attribute?
         this.refreshDimensions();
         this.twoBlockSpaceCooldown = 5.0F;
         this.ticksTillRemove = Utils.secondsToTicks(ServerConfig.TIME_UNTIL_LEAVE_CHASE.get());
@@ -100,6 +100,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         setAttribute(getAttribute(Attributes.ATTACK_DAMAGE), ServerConfig.ATTACK_DAMAGE.get());
         setAttribute(getAttribute(Attributes.ATTACK_SPEED), ServerConfig.ATTACK_SPEED.get());
         setAttribute(getAttribute(Attributes.MOVEMENT_SPEED), ServerConfig.MOVEMENT_SPEED.get());
+        setAttribute(getAttribute(ForgeMod.STEP_HEIGHT_ADDITION.get()), 0.4); // Default for LivingEntity is 0.6
 
         return super.finalizeSpawn(level, difficulty, reason, spawnData, tagData);
     }
@@ -170,10 +171,10 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
             BlockPos blockPosition4 = new BlockPos(posX, posY - 1, posZ);
             --runFor;
 
-            if (!level.getBlockState(blockPosition).getMaterial().blocksMotion()
-                    && !level.getBlockState(blockPosition2).getMaterial().blocksMotion()
-                    && !level.getBlockState(blockPosition3).getMaterial().blocksMotion()
-                    && level.getBlockState(blockPosition4).getMaterial().blocksMotion()) {
+            if (!level().getBlockState(blockPosition).blocksMotion()
+                    && !level().getBlockState(blockPosition2).blocksMotion()
+                    && !level().getBlockState(blockPosition3).blocksMotion()
+                    && level().getBlockState(blockPosition4).blocksMotion()) {
                 break;
             }
         }
@@ -196,8 +197,8 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         }
 
         BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos(position().x, position().y + 2.0, position().z);
-        BlockState above = level.getBlockState(blockpos$mutableblockpos);
-        boolean blocksMotion = above.getMaterial().blocksMotion();
+        BlockState above = level().getBlockState(blockpos$mutableblockpos);
+        boolean blocksMotion = above.blocksMotion();
 
         if (blocksMotion) {
             twoBlockSpaceTimer = twoBlockSpaceCooldown;
@@ -223,7 +224,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
             playSpottedSound();
         }
 
-        if (!level.isClientSide) {
+        if (!level().isClientSide) {
             setClimbing(horizontalCollision);
         }
     }
@@ -349,12 +350,12 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
     }
 
     private void playEntitySound(SoundEvent soundEvent, float volume, float pitch) {
-        level.playSound(null, this, soundEvent, SoundSource.HOSTILE, volume, pitch);
+        level().playSound(null, this, soundEvent, SoundSource.HOSTILE, volume, pitch);
     }
 
     // TODO :: Is this needed? Why not just playEntitySound
     private void playBlockPosSound(final ResourceLocation soundResource, float volume, float pitch) {
-        if (level instanceof ServerLevel serverLevel) {
+        if (level() instanceof ServerLevel serverLevel) {
             int radius = 10; // blocks
             serverLevel.getPlayers(player -> player.distanceToSqr(this) <= radius * radius).forEach(player -> NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CaveSound(soundResource, player.blockPosition(), volume, pitch)));
         }

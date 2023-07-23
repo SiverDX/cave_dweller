@@ -20,7 +20,7 @@ public class CaveDwellerTargetSeesMeGoal extends NearestAttackableTargetGoal<Pla
         if (caveDweller.isInvisible()) {
             return false;
         } else {
-            setPendingTarget(caveDweller.level.getNearestPlayer(caveDweller, 200.0));
+            setPendingTarget(caveDweller.level().getNearestPlayer(caveDweller, 200.0));
 
             if (pendingTarget == null) {
                 return false;

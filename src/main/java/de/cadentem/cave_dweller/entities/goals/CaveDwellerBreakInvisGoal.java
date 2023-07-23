@@ -15,7 +15,7 @@ public class CaveDwellerBreakInvisGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        pendingTarget = mob.level.getNearestPlayer(mob, 200.0);
+        pendingTarget = mob.level().getNearestPlayer(mob, 200.0);
         return mob.isInvisible() && (!inPlayerLineOfSight() || !mob.isLookingAtMe(pendingTarget));
     }
 
