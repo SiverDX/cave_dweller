@@ -22,6 +22,7 @@ import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.lighting.LayerLightEventListener;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -47,7 +48,6 @@ public class CaveDweller {
     private final List<Player> spelunkers = new ArrayList<>();
     private final Random random = new Random();
 
-    private boolean initialized; // TODO :: Currently needed since config values are not present at server start up
     private int calmTimer;
     private int noiseTimer;
 
@@ -77,16 +77,17 @@ public class CaveDweller {
     }
 
     @SubscribeEvent
+    public void serverStartup(final ServerStartedEvent event) {
+        spelunkers.clear();
+        resetNoiseTimer();
+        resetCalmTimer();
+    }
+
+    @SubscribeEvent
     public void serverTick(final TickEvent.ServerTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
             // Prevent ticking twice per server tick
             return;
-        }
-
-        if (!initialized) {
-            resetNoiseTimer();
-            resetCalmTimer();
-            initialized = true;
         }
 
         ServerLevel overworld = event.getServer().getLevel(Level.OVERWORLD);
