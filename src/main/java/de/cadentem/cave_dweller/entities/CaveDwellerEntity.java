@@ -51,7 +51,6 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
     public Roll currentRoll = Roll.STROLL;
-    public boolean isAggro; // FIXME :: replace with setAggro etc.
     public boolean fakeSize = false;
     private boolean inTwoBlockSpace = false;
     public boolean spottedByPlayer = false;
@@ -214,7 +213,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
             }
         }
 
-        if (isAggro || isFleeing) {
+        if (isAggressive() || isFleeing) {
             spottedByPlayer = false;
             entityData.set(SPOTTED_ACCESSOR, false);
         }
@@ -234,11 +233,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
 
     @Override
     public @NotNull EntityDimensions getDimensions(@NotNull final Pose pose) {
-        if (isAggro) {
-            return fakeSize ? new EntityDimensions(0.5F, 0.9F, true) : new EntityDimensions(0.5F, 1.9F, true);
-        } else {
-            return new EntityDimensions(0.5F, 1.9F, true);
-        }
+        return fakeSize ? new EntityDimensions(0.5F, 0.9F, true) : new EntityDimensions(0.5F, 1.9F, true);
     }
 
     private boolean isMoving() {
@@ -249,7 +244,11 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
     }
 
     public void reRoll() {
-        currentRoll = Roll.fromValue(new Random().nextInt(4));
+        /* TODO
+        Rolling STROLL (3) here causes it to just stand in place and play the stare animation
+        (And playing the stare animation when it stops moving)
+        */
+        currentRoll = Roll.fromValue(new Random().nextInt(3));
     }
 
     public void pickRoll(@NotNull final List<Roll> rolls) {
