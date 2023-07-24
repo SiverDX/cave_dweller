@@ -24,7 +24,7 @@ public class CaveDwellerStareGoal extends Goal {
         } else if (mob.getTarget() == null) {
             return false;
         } else {
-            return mob.reRollResult == 1;
+            return mob.currentRoll == Roll.STARE;
         }
     }
 
@@ -33,7 +33,7 @@ public class CaveDwellerStareGoal extends Goal {
         if (mob.getTarget() == null) {
             return false;
         } else {
-            return mob.reRollResult == 1;
+            return mob.currentRoll == Roll.STARE;
         }
     }
 
@@ -43,14 +43,19 @@ public class CaveDwellerStareGoal extends Goal {
     }
 
     @Override
+    public void stop() {
+        super.stop();
+        mob.getEntityData().set(CaveDwellerEntity.SPOTTED_ACCESSOR, false);
+    }
+
+    @Override
     public void tick() {
         tickStareClock();
         LivingEntity target = mob.getTarget();
 
         if (shouldLeave) {
-            if (new Random().nextDouble() < 0.1) {
-                mob.pickRoll(List.of(0, 2));
-
+            if (new Random().nextDouble() < 0.5) {
+                mob.pickRoll(List.of(Roll.CHASE, Roll.FLEE));
             } else if (!mob.isLookingAtMe(target) || !inPlayerLineOfSight()) {
                 // Once the player stops looking at it
                 mob.playDisappearSound();

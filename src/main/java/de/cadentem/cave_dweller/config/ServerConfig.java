@@ -25,6 +25,9 @@ public class ServerConfig {
     public static ForgeConfigSpec.ConfigValue<Integer> TIME_UNTIL_LEAVE;
     public static ForgeConfigSpec.ConfigValue<Integer> TIME_UNTIL_LEAVE_CHASE;
     public static ForgeConfigSpec.ConfigValue<Double> DEPTH_STRIDER_BONUS;
+    public static ForgeConfigSpec.ConfigValue<Boolean> CAN_CLIMB;
+    public static ForgeConfigSpec.ConfigValue<Boolean> CAN_BREAK_DOOR;
+    public static ForgeConfigSpec.ConfigValue<Integer> BREAK_DOOR_TIME;
 
     public static ForgeConfigSpec.ConfigValue<Double> MAX_HEALTH;
     public static ForgeConfigSpec.ConfigValue<Double> ATTACK_DAMAGE;
@@ -55,11 +58,14 @@ public class ServerConfig {
         BUILDER.pop();
 
         BUILDER.push("Behaviour");
-        SPOTTING_RANGE = BUILDER.comment("The distance in blocks at which the Cave Dweller can detect whether a player is looking at it or not").defineInRange("spotting_range", 40, 0, 200);
-        TIME_STARING = BUILDER.comment("The time (in seconds) the Cave Dweller will stare at the player (once spotted) before taking a new action or leaving").defineInRange("time_staring", 5, 0, 60);
+        SPOTTING_RANGE = BUILDER.comment("The distance in blocks at which the Cave Dweller can detect whether a player is looking at it or not").defineInRange("spotting_range", 40, 0, 128);
+        TIME_STARING = BUILDER.comment("Time (in seconds) the Cave Dweller will stare at the player (once spotted) before taking a new action or leaving").defineInRange("time_staring", 4, 0, 60);
         TIME_UNTIL_LEAVE = BUILDER.comment("Time (in seconds) it takes for the Cave Dweller to leave").defineInRange("time_until_leave", 300, 1, 6000);
         TIME_UNTIL_LEAVE_CHASE = BUILDER.comment("Time (in seconds) it takes for the Cave Dweller to leave once a chase begins").defineInRange("time_until_leave_chase", 30, 1, 600);
         DEPTH_STRIDER_BONUS = BUILDER.comment("Depth Strider speed bonus").defineInRange("depth_strider_bonus", 1.5, 0, 3);
+        CAN_CLIMB = BUILDER.comment("Whether the cave dweller can climb or not").define("can_climb", true);
+        CAN_BREAK_DOOR = BUILDER.comment("Whether the cave dweller can break down doors or not").define("can_break_door", true);
+        BREAK_DOOR_TIME = BUILDER.comment("Time (in seconds) it takes the Cave Dweller to break down a door").defineInRange("break_door_time", 3, 1, 60);
         BUILDER.pop();
 
         BUILDER.push("Attributes");

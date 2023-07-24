@@ -45,7 +45,7 @@ public class CaveDwellerTargetTooCloseGoal extends NearestAttackableTargetGoal<P
     public void start() {
         caveDweller.getEntityData().set(CaveDwellerEntity.AGGRO_ACCESSOR, true);
         caveDweller.isAggro = true;
-        caveDweller.reRollResult = 0;
+        caveDweller.currentRoll = Roll.CHASE;
         super.target = pendingTarget;
         caveDweller.setTarget(pendingTarget);
         super.start();

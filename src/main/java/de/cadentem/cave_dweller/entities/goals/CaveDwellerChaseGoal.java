@@ -8,6 +8,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.navigation.WallClimberNavigation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.Node;
@@ -60,7 +61,7 @@ public class CaveDwellerChaseGoal extends Goal {
     public boolean canUse() {
         if (mob.isInvisible()) {
             return false;
-        } else if (mob.reRollResult != 0) {
+        } else if (mob.currentRoll != Roll.CHASE) {
             return false;
         } else {
             long ticks = mob.level().getGameTime();
@@ -146,8 +147,8 @@ public class CaveDwellerChaseGoal extends Goal {
         currentTicksUntilChase = ticksUntilChase;
         mob.setAggressive(false);
         mob.getNavigation().stop();
-        mob.setNoGravity(false);
-        mob.noPhysics = false;
+//        mob.setNoGravity(false);
+//        mob.noPhysics = false;
     }
 
     @Override
@@ -201,8 +202,8 @@ public class CaveDwellerChaseGoal extends Goal {
     }
 
     private void squeezingTick() {
-        mob.setNoGravity(true);
-        mob.noPhysics = true;
+//        mob.setNoGravity(true);
+//        mob.noPhysics = true;
 
         Path path = mob.getNavigation().getPath();
 
@@ -292,8 +293,8 @@ public class CaveDwellerChaseGoal extends Goal {
     private void stopSqueezing() {
         squeezing = false;
         mob.getEntityData().set(CaveDwellerEntity.SQUEEZING_ACCESSOR, false);
-        mob.setNoGravity(false);
-        mob.noPhysics = false;
+//        mob.setNoGravity(false);
+//        mob.noPhysics = false;
     }
 
     private void startSqueezing() {
@@ -334,8 +335,8 @@ public class CaveDwellerChaseGoal extends Goal {
 
     private void aggroTick() {
         mob.playChaseSound();
-        mob.noPhysics = false;
-        mob.setNoGravity(false);
+//        mob.noPhysics = false;
+//        mob.setNoGravity(false);
 
         LivingEntity target = mob.getTarget();
 
