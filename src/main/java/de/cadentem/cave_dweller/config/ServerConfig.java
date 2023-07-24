@@ -28,6 +28,7 @@ public class ServerConfig {
     public static ForgeConfigSpec.ConfigValue<Boolean> CAN_CLIMB;
     public static ForgeConfigSpec.ConfigValue<Boolean> CAN_BREAK_DOOR;
     public static ForgeConfigSpec.ConfigValue<Integer> BREAK_DOOR_TIME;
+    public static ForgeConfigSpec.ConfigValue<Boolean> ALLOW_RIDING;
 
     public static ForgeConfigSpec.ConfigValue<Double> MAX_HEALTH;
     public static ForgeConfigSpec.ConfigValue<Double> ATTACK_DAMAGE;
@@ -66,6 +67,7 @@ public class ServerConfig {
         CAN_CLIMB = BUILDER.comment("Whether the cave dweller can climb or not").define("can_climb", true);
         CAN_BREAK_DOOR = BUILDER.comment("Whether the cave dweller can break down doors or not").define("can_break_door", true);
         BREAK_DOOR_TIME = BUILDER.comment("Time (in seconds) it takes the Cave Dweller to break down a door").defineInRange("break_door_time", 3, 1, 60);
+        ALLOW_RIDING = BUILDER.comment("Allow the Cave Dweller to follow vanilla riding logic (e.g. boats)").define("allow_riding", false);
         BUILDER.pop();
 
         BUILDER.push("Attributes");
