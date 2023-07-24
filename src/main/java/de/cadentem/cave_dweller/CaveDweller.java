@@ -78,6 +78,11 @@ public class CaveDweller {
 
     @SubscribeEvent
     public void serverTick(final TickEvent.ServerTickEvent event) {
+        if (event.phase == TickEvent.Phase.END) {
+            // Prevent ticking twice per server tick
+            return;
+        }
+
         if (!initialized) {
             resetNoiseTimer();
             resetCalmTimer();
