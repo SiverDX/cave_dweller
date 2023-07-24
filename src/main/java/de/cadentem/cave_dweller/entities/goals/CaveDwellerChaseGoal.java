@@ -8,7 +8,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.level.pathfinder.Path;
@@ -60,7 +59,7 @@ public class CaveDwellerChaseGoal extends Goal {
     public boolean canUse() {
         if (mob.isInvisible()) {
             return false;
-        } else if (mob.reRollResult != 0) {
+        } else if (mob.currentRoll != Roll.CHASE) {
             return false;
         } else {
             long ticks = mob.level.getGameTime();
@@ -121,12 +120,13 @@ public class CaveDwellerChaseGoal extends Goal {
         } else if (!mob.isWithinRestriction(target.blockPosition())) {
             return false;
         } else {
-            return !(target instanceof Player player) || !target.isSpectator() && !player.isCreative();
+            return Utils.isValidPlayer(target);
         }
     }
 
     @Override
     public void start() {
+        this.mob.setAggressive(true);
         ticksUntilNextPathRecalculation = 0;
         ticksUntilNextAttack = 0;
     }
@@ -141,13 +141,9 @@ public class CaveDwellerChaseGoal extends Goal {
 
         mob.squeezeCrawling = false;
         mob.getEntityData().set(CaveDwellerEntity.AGGRO_ACCESSOR, false);
-        mob.isAggro = false;
         mob.refreshDimensions();
         currentTicksUntilChase = ticksUntilChase;
-        mob.setAggressive(false);
         mob.getNavigation().stop();
-        mob.setNoGravity(false);
-        mob.noPhysics = false;
     }
 
     @Override
@@ -163,7 +159,7 @@ public class CaveDwellerChaseGoal extends Goal {
         tickAggroClock();
 
         if (!squeezing && target != null) {
-            if (mob.isAggro) {
+            if (mob.isAggressive()) {
                 mob.getLookControl().setLookAt(target, 90.0F, 90.0F);
             } else {
                 mob.getLookControl().setLookAt(target, 180.0F, 1.0F);
@@ -191,7 +187,6 @@ public class CaveDwellerChaseGoal extends Goal {
             mob.getEntityData().set(CaveDwellerEntity.AGGRO_ACCESSOR, true);
         }
 
-        mob.isAggro = true;
         mob.refreshDimensions();
     }
 
@@ -201,9 +196,6 @@ public class CaveDwellerChaseGoal extends Goal {
     }
 
     private void squeezingTick() {
-        mob.setNoGravity(true);
-        mob.noPhysics = true;
-
         Path path = mob.getNavigation().getPath();
 
         if (path != null && !path.isDone()) {
@@ -292,8 +284,6 @@ public class CaveDwellerChaseGoal extends Goal {
     private void stopSqueezing() {
         squeezing = false;
         mob.getEntityData().set(CaveDwellerEntity.SQUEEZING_ACCESSOR, false);
-        mob.setNoGravity(false);
-        mob.noPhysics = false;
     }
 
     private void startSqueezing() {
@@ -334,9 +324,6 @@ public class CaveDwellerChaseGoal extends Goal {
 
     private void aggroTick() {
         mob.playChaseSound();
-        mob.noPhysics = false;
-        mob.setNoGravity(false);
-
         LivingEntity target = mob.getTarget();
 
         boolean shouldUseShortPath = true;

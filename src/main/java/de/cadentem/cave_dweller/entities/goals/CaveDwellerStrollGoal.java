@@ -10,11 +10,11 @@ public class CaveDwellerStrollGoal extends WaterAvoidingRandomStrollGoal {
 
     @Override
     public boolean canUse() {
-        return ((CaveDwellerEntity) this.mob).reRollResult == 3 && super.canUse();
+        return ((CaveDwellerEntity) this.mob).currentRoll == Roll.STROLL && super.canUse();
     }
 
     @Override
     public boolean canContinueToUse() {
-        return ((CaveDwellerEntity) this.mob).reRollResult == 3 && super.canContinueToUse();
+        return ((CaveDwellerEntity) this.mob).currentRoll == Roll.STROLL && super.canContinueToUse();
     }
 }
