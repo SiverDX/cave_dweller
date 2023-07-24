@@ -18,7 +18,7 @@ public class Utils {
 
     public static String getTextureAppend() {
 //        if (ClientConfig.USE_UPDATED_TEXTURES.get()) {
-//           return "_frogballoon";
+//           return "";
 //        }
 
         return "";
