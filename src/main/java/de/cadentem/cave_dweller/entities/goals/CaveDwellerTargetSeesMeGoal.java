@@ -1,6 +1,7 @@
 package de.cadentem.cave_dweller.entities.goals;
 
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
+import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.player.Player;
 import org.jetbrains.annotations.Nullable;
@@ -22,9 +23,7 @@ public class CaveDwellerTargetSeesMeGoal extends NearestAttackableTargetGoal<Pla
         } else {
             setPendingTarget(caveDweller.level.getNearestPlayer(caveDweller, 200.0));
 
-            if (pendingTarget == null) {
-                return false;
-            } else if (pendingTarget.isCreative()) {
+            if (Utils.isValidPlayer(target)) {
                 return false;
             } else {
                 return inPlayerLineOfSight() && caveDweller.isLookingAtMe(pendingTarget);
@@ -50,11 +49,7 @@ public class CaveDwellerTargetSeesMeGoal extends NearestAttackableTargetGoal<Pla
 
     @Override
     public boolean canContinueToUse() {
-        if (pendingTarget.isCreative()) {
-            return false;
-        } else {
-            return pendingTarget != null;
-        }
+        return Utils.isValidPlayer(pendingTarget);
     }
 
     @Override
