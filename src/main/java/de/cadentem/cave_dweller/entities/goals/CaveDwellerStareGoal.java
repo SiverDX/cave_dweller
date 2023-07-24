@@ -60,6 +60,7 @@ public class CaveDwellerStareGoal extends Goal {
         LivingEntity target = mob.getTarget();
 
         if (shouldLeave) {
+            // TODO :: If the player stares for too long teleport to a random spot or apply blindness? (and reset timer)
             if (new Random().nextDouble() < 0.5 && target != null && mob.distanceTo(target) < 15 /* Triggers before TargetTooClose goal can be triggered */) {
                 mob.pickRoll(List.of(Roll.CHASE, Roll.FLEE));
             } else if (isTargetNotLooking()) {

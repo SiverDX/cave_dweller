@@ -184,6 +184,24 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         return new Vec3(posX, posY, posZ);
     }
 
+    @Override /* TODO :: Might not be used for mobs */
+    protected boolean canRide(@NotNull final Entity vehicle) {
+        if (ServerConfig.ALLOW_RIDING.get()) {
+            super.canRide(vehicle);
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean startRiding(@NotNull final Entity vehicle, boolean force) {
+        if (ServerConfig.ALLOW_RIDING.get()) {
+            return super.startRiding(vehicle, force);
+        }
+
+        return false;
+    }
+
     @Override
     public void tick() {
         --ticksTillRemove;
