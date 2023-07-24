@@ -328,7 +328,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
             } else {
                 return state.setAndContinue(CHASE_IDLE);
             }
-        } else if (entityData.get(SPOTTED_ACCESSOR) && !event.isMoving()) {
+        } else if (entityData.get(SPOTTED_ACCESSOR) && !state.isMoving()) {
             // Spotted
             return state.setAndContinue(IS_SPOTTED);
         } else {
