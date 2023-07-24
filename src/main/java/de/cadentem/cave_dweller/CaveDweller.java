@@ -12,7 +12,6 @@ import de.cadentem.cave_dweller.registry.ModSounds;
 import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
@@ -78,7 +77,7 @@ public class CaveDweller {
     }
 
     @SubscribeEvent
-    public void serverTick(final TickEvent.WorldTickEvent event) {
+    public void serverTick(final TickEvent.ServerTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
             // Prevent ticking twice per server tick
             return;
@@ -90,14 +89,7 @@ public class CaveDweller {
             initialized = true;
         }
 
-        MinecraftServer server = event.world.getServer();
-
-        if (server == null) {
-            LOG.debug("Server was null within the `serverTick`");
-            return;
-        }
-
-        ServerLevel overworld = server.getLevel(Level.OVERWORLD);
+        ServerLevel overworld = event.getServer().getLevel(Level.OVERWORLD);
 
         if (overworld == null) {
             return;
@@ -171,41 +163,45 @@ public class CaveDweller {
     }
 
     public boolean isPlayerSpelunker(final ServerPlayer player) {
-        if (!Utils.isValidPlayer(player)) {
+        if (player == null) {
             return false;
+        } else {
+            if (player.isCreative() || player.isSpectator()) {
+                return false;
+            }
+
+            // Height level check
+            if (player.position().y > ServerConfig.SPAWN_HEIGHT.get()) {
+                return false;
+            }
+
+            ServerLevel serverLevel = player.getLevel();
+
+            // Sky light level check
+            // Referenced from DaylightDetectorBlock
+            int skyLightLevel = serverLevel.getBrightness(LightLayer.SKY, player.blockPosition()) - serverLevel.getSkyDarken();
+            float sunAngle = serverLevel.getSunAngle(1.0F);
+            if (skyLightLevel > 0) {
+                float f1 = sunAngle < (float) Math.PI ? 0.0F : ((float) Math.PI * 2F);
+                sunAngle += (f1 - sunAngle) * 0.2F;
+                skyLightLevel = Math.round((float) skyLightLevel * Mth.cos(sunAngle));
+            }
+
+            skyLightLevel = Mth.clamp(skyLightLevel, 0, 15);
+
+            if (skyLightLevel > ServerConfig.SKY_LIGHT_LEVEL.get()) {
+                return false;
+            }
+
+            // Block light level check
+            LayerLightEventListener blockLighting = player.getLevel().getLightEngine().getLayerListener(LightLayer.BLOCK);
+
+            if (blockLighting.getLightValue(player.blockPosition()) > ServerConfig.BLOCK_LIGHT_LEVEL.get()) {
+                return false;
+            }
+
+            return (ServerConfig.ALLOW_SURFACE_SPAWN.get() || !player.getLevel().canSeeSky(player.blockPosition()));
         }
-
-        // Height level check
-        if (player.position().y > ServerConfig.SPAWN_HEIGHT.get()) {
-            return false;
-        }
-
-        ServerLevel serverLevel = player.getLevel();
-
-        // Sky light level check
-        // Referenced from DaylightDetectorBlock
-        int skyLightLevel = serverLevel.getBrightness(LightLayer.SKY, player.blockPosition()) - serverLevel.getSkyDarken();
-        float sunAngle = serverLevel.getSunAngle(1.0F);
-        if (skyLightLevel > 0) {
-            float f1 = sunAngle < (float) Math.PI ? 0.0F : ((float) Math.PI * 2F);
-            sunAngle += (f1 - sunAngle) * 0.2F;
-            skyLightLevel = Math.round((float) skyLightLevel * Mth.cos(sunAngle));
-        }
-
-        skyLightLevel = Mth.clamp(skyLightLevel, 0, 15);
-
-        if (skyLightLevel > ServerConfig.SKY_LIGHT_LEVEL.get()) {
-            return false;
-        }
-
-        // Block light level check
-        LayerLightEventListener blockLighting = player.getLevel().getLightEngine().getLayerListener(LightLayer.BLOCK);
-
-        if (blockLighting.getLightValue(player.blockPosition()) > ServerConfig.BLOCK_LIGHT_LEVEL.get()) {
-            return false;
-        }
-
-        return (ServerConfig.ALLOW_SURFACE_SPAWN.get() || !player.getLevel().canSeeSky(player.blockPosition()));
     }
 
     private void resetCalmTimer() {

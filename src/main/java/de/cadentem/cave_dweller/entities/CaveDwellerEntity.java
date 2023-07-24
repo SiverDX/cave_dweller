@@ -52,6 +52,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     private final AnimationFactory factory = GeckoLibUtil.createFactory(this);
 
     public Roll currentRoll = Roll.STROLL;
+    public boolean isAggro; // FIXME :: replace with setAggro etc.
     public boolean fakeSize = false;
     private boolean inTwoBlockSpace = false;
     public boolean spottedByPlayer = false;
@@ -216,7 +217,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             }
         }
 
-        if (isAggressive() || isFleeing) {
+        if (isAggro || isFleeing) {
             spottedByPlayer = false;
             entityData.set(SPOTTED_ACCESSOR, false);
         }
@@ -236,7 +237,11 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
 
     @Override
     public @NotNull EntityDimensions getDimensions(@NotNull final Pose pose) {
-        return fakeSize ? new EntityDimensions(0.5F, 0.9F, true) : new EntityDimensions(0.5F, 1.9F, true);
+        if (isAggro) {
+            return fakeSize ? new EntityDimensions(0.5F, 0.9F, true) : new EntityDimensions(0.5F, 1.9F, true);
+        } else {
+            return new EntityDimensions(0.5F, 1.9F, true);
+        }
     }
 
     private boolean isMoving() {
@@ -247,11 +252,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     }
 
     public void reRoll() {
-        /* TODO
-        Rolling STROLL (3) here causes it to just stand in place and play the stare animation
-        (And playing the stare animation when it stops moving)
-        */
-        currentRoll = Roll.fromValue(new Random().nextInt(3));
+        currentRoll = Roll.fromValue(new Random().nextInt(4));
     }
 
     public void pickRoll(@NotNull final List<Roll> rolls) {
