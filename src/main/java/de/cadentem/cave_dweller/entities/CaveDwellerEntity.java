@@ -30,6 +30,7 @@ import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -49,7 +50,7 @@ import java.util.Random;
 public class CaveDwellerEntity extends Monster implements GeoEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
-    public int reRollResult = 3;
+    public Roll currentRoll = Roll.STROLL;
     public boolean isAggro; // FIXME :: replace with setAggro etc.
     public boolean fakeSize = false;
     private boolean inTwoBlockSpace = false;
@@ -88,7 +89,6 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
 
     public CaveDwellerEntity(final EntityType<? extends CaveDwellerEntity> entityType, final Level level) {
         super(entityType, level);
-        this.maxUpStep = 1.0F; // TODO :: Use Attribute?
         this.refreshDimensions();
         this.twoBlockSpaceCooldown = 5.0F;
         this.ticksTillRemove = Utils.secondsToTicks(ServerConfig.TIME_UNTIL_LEAVE_CHASE.get());
@@ -100,6 +100,9 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         setAttribute(getAttribute(Attributes.ATTACK_DAMAGE), ServerConfig.ATTACK_DAMAGE.get());
         setAttribute(getAttribute(Attributes.ATTACK_SPEED), ServerConfig.ATTACK_SPEED.get());
         setAttribute(getAttribute(Attributes.MOVEMENT_SPEED), ServerConfig.MOVEMENT_SPEED.get());
+        setAttribute(getAttribute(ForgeMod.STEP_HEIGHT_ADDITION.get()), 0.4); // LivingEntity default is 0.6
+
+//        ((WallClimberNavigation) getNavigation()).setCanOpenDoors(true);
 
         return super.finalizeSpawn(level, difficulty, reason, spawnData, tagData);
     }
@@ -145,11 +148,14 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
 
     @Override
     protected void registerGoals() {
-        goalSelector.addGoal(1, new CaveDwellerStareGoal(this, Utils.secondsToTicks(ServerConfig.TIME_STARING.get())));
         goalSelector.addGoal(1, new CaveDwellerChaseGoal(this,  0.85F, true, 20.0F));
         goalSelector.addGoal(1, new CaveDwellerFleeGoal(this, 20.0F, 1.0));
-        goalSelector.addGoal(1, new CaveDwellerStrollGoal(this, 0.7));
-        goalSelector.addGoal(1, new CaveDwellerBreakInvisGoal(this));
+        goalSelector.addGoal(2, new CaveDwellerBreakInvisGoal(this));
+        goalSelector.addGoal(2, new CaveDwellerStareGoal(this, Utils.secondsToTicks(ServerConfig.TIME_STARING.get())));
+        if (ServerConfig.CAN_BREAK_DOOR.get()) {
+            goalSelector.addGoal(2, new CaveDwellerBreakDoorGoal(this, difficulty -> true));
+        }
+        goalSelector.addGoal(3, new CaveDwellerStrollGoal(this, 0.7));
         targetSelector.addGoal(1, new CaveDwellerTargetTooCloseGoal(this, 12.0F));
         targetSelector.addGoal(2, new CaveDwellerTargetSeesMeGoal(this));
     }
@@ -245,11 +251,11 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
     }
 
     public void reRoll() {
-        reRollResult = new Random().nextInt(4);
+        currentRoll = Roll.fromValue(new Random().nextInt(4));
     }
 
-    public void pickRoll(@NotNull final List<Integer> rolls) {
-        reRollResult = rolls.get(new Random().nextInt(rolls.size()));
+    public void pickRoll(@NotNull final List<Roll> rolls) {
+        currentRoll = rolls.get(new Random().nextInt(rolls.size()));
     }
 
     public Path createShortPath(final LivingEntity target) {
@@ -276,7 +282,15 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
     }
 
     public boolean isClimbing() {
-        return entityData.get(CLIMBING_ACCESSOR);
+        if (!ServerConfig.CAN_CLIMB.get()) {
+            return false;
+        }
+
+        if (getTarget() != null && getTarget().getPosition(1).y > getY()) {
+            return entityData.get(CLIMBING_ACCESSOR);
+        }
+
+        return false;
     }
 
     public void setClimbing(boolean isClimbing) {
@@ -315,7 +329,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
             } else {
                 return state.setAndContinue(CHASE_IDLE);
             }
-        } else if (entityData.get(SPOTTED_ACCESSOR)) {
+        } else if (entityData.get(SPOTTED_ACCESSOR) && !event.isMoving()) {
             // Spotted
             return state.setAndContinue(IS_SPOTTED);
         } else {
