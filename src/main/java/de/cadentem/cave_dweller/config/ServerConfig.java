@@ -59,7 +59,7 @@ public class ServerConfig {
 
         BUILDER.push("Behaviour");
         SPOTTING_RANGE = BUILDER.comment("The distance in blocks at which the Cave Dweller can detect whether a player is looking at it or not").defineInRange("spotting_range", 40, 0, 128);
-        TIME_STARING = BUILDER.comment("Time (in seconds) the Cave Dweller will stare at the player (once spotted) before taking a new action or leaving").defineInRange("time_staring", 4, 0, 60);
+        TIME_STARING = BUILDER.comment("Time (in seconds) the Cave Dweller will stare at the player (once spotted) before taking a new action or leaving").defineInRange("time_staring", 7, 0, 60);
         TIME_UNTIL_LEAVE = BUILDER.comment("Time (in seconds) it takes for the Cave Dweller to leave").defineInRange("time_until_leave", 300, 1, 6000);
         TIME_UNTIL_LEAVE_CHASE = BUILDER.comment("Time (in seconds) it takes for the Cave Dweller to leave once a chase begins").defineInRange("time_until_leave_chase", 30, 1, 600);
         DEPTH_STRIDER_BONUS = BUILDER.comment("Depth Strider speed bonus").defineInRange("depth_strider_bonus", 1.5, 0, 3);
