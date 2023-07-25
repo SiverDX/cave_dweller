@@ -1,32 +1,26 @@
 package de.cadentem.cave_dweller.entities.goals;
 
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
+import de.cadentem.cave_dweller.util.Utils;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.player.Player;
 
 public class CaveDwellerBreakInvisGoal extends Goal {
-    private final CaveDwellerEntity mob;
+    private final CaveDwellerEntity caveDweller;
 
-    private Player pendingTarget;
-
-    public CaveDwellerBreakInvisGoal(final CaveDwellerEntity mob) {
-        this.mob = mob;
+    public CaveDwellerBreakInvisGoal(final CaveDwellerEntity caveDweller) {
+        this.caveDweller = caveDweller;
     }
 
     @Override
     public boolean canUse() {
-        pendingTarget = mob.level.getNearestPlayer(mob, 200.0);
-        // Player is not looking
-        return mob.isInvisible() && (!inPlayerLineOfSight() || !mob.isLookingAtMe(pendingTarget));
+        LivingEntity target = Utils.getValidTarget(caveDweller);
+        return caveDweller.isInvisible() && (!caveDweller.inLineOfSight(target) || !caveDweller.isLookingAtMe(target));
     }
 
     @Override
     public void start() {
         super.start();
-        mob.setInvisible(false);
-    }
-
-    private boolean inPlayerLineOfSight() {
-        return pendingTarget != null && pendingTarget.hasLineOfSight(mob);
+        caveDweller.setInvisible(false);
     }
 }

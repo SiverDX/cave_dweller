@@ -3,6 +3,7 @@ package de.cadentem.cave_dweller.events;
 import de.cadentem.cave_dweller.CaveDweller;
 import de.cadentem.cave_dweller.client.CaveDwellerEyesLayer;
 import de.cadentem.cave_dweller.config.ClientConfig;
+import de.cadentem.cave_dweller.config.ServerConfig;
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
 import de.cadentem.cave_dweller.registry.ModEntityTypes;
 import de.cadentem.cave_dweller.util.Utils;
@@ -20,9 +21,15 @@ public class ModEvents {
     }
 
     @SubscribeEvent
-    public void reloadConfiguration(final ModConfigEvent.Reloading event) {
+    public static void reloadConfiguration(final ModConfigEvent.Reloading event) {
         if (event.getConfig().getSpec() == ClientConfig.SPEC) {
             CaveDwellerEyesLayer.TEXTURE = new ResourceLocation(CaveDweller.MODID, "textures/entity/cave_dweller_eyes_texture" + Utils.getTextureAppend() + ".png");
+            ClientConfig.SPEC.afterReload();
+        }
+
+        if (event.getConfig().getSpec() == ServerConfig.SPEC) {
+            ServerConfig.SPEC.afterReload();
+            CaveDweller.doReload = true;
         }
     }
 }
