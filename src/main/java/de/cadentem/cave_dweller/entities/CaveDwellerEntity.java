@@ -35,35 +35,34 @@ import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import software.bernie.geckolib3.core.IAnimatable;
-import software.bernie.geckolib3.core.PlayState;
-import software.bernie.geckolib3.core.builder.AnimationBuilder;
-import software.bernie.geckolib3.core.builder.ILoopType;
-import software.bernie.geckolib3.core.builder.RawAnimation;
-import software.bernie.geckolib3.core.controller.AnimationController;
-import software.bernie.geckolib3.core.event.predicate.AnimationEvent;
-import software.bernie.geckolib3.core.manager.AnimationData;
-import software.bernie.geckolib3.core.manager.AnimationFactory;
-import software.bernie.geckolib3.util.GeckoLibUtil;
+import software.bernie.geckolib.animatable.GeoEntity;
+import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.core.animation.AnimatableManager;
+import software.bernie.geckolib.core.animation.Animation.LoopType;
+import software.bernie.geckolib.core.animation.AnimationController;
+import software.bernie.geckolib.core.animation.AnimationState;
+import software.bernie.geckolib.core.animation.RawAnimation;
+import software.bernie.geckolib.core.object.PlayState;
+import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.List;
 import java.util.Random;
 
-public class CaveDwellerEntity extends Monster implements IAnimatable {
-    private final AnimationFactory factory = GeckoLibUtil.createFactory(this);
+public class CaveDwellerEntity extends Monster implements GeoEntity {
+    private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
     // TODO :: 2 unused animations
-    private final RawAnimation OLD_RUN = new RawAnimation("animation.cave_dweller.run", ILoopType.EDefaultLoopTypes.LOOP);
-    private final RawAnimation IDLE = new RawAnimation("animation.cave_dweller.idle", ILoopType.EDefaultLoopTypes.LOOP);
-    private final RawAnimation CHASE = new RawAnimation("animation.cave_dweller.new_run", ILoopType.EDefaultLoopTypes.LOOP);
-    private final RawAnimation CHASE_IDLE = new RawAnimation("animation.cave_dweller.run_idle", ILoopType.EDefaultLoopTypes.LOOP);
-    private final RawAnimation CROUCH_RUN = new RawAnimation("animation.cave_dweller.crouch_run_new", ILoopType.EDefaultLoopTypes.LOOP);
-    private final RawAnimation CROUCH_IDLE = new RawAnimation("animation.cave_dweller.crouch_idle", ILoopType.EDefaultLoopTypes.LOOP);
-    private final RawAnimation CALM_RUN = new RawAnimation("animation.cave_dweller.calm_move", ILoopType.EDefaultLoopTypes.LOOP);
-    private final RawAnimation CALM_STILL = new RawAnimation("animation.cave_dweller.calm_idle", ILoopType.EDefaultLoopTypes.LOOP);
-    private final RawAnimation IS_SPOTTED = new RawAnimation("animation.cave_dweller.spotted", ILoopType.EDefaultLoopTypes.HOLD_ON_LAST_FRAME);
-    private final RawAnimation CRAWL = new RawAnimation("animation.cave_dweller.crawl", ILoopType.EDefaultLoopTypes.HOLD_ON_LAST_FRAME);
-    private final RawAnimation FLEE = new RawAnimation("animation.cave_dweller.flee", ILoopType.EDefaultLoopTypes.LOOP);
+    private final RawAnimation OLD_RUN = RawAnimation.begin().then("animation.cave_dweller.run", LoopType.LOOP);
+    private final RawAnimation IDLE = RawAnimation.begin().then("animation.cave_dweller.idle", LoopType.LOOP);
+    private final RawAnimation CHASE = RawAnimation.begin().then("animation.cave_dweller.new_run", LoopType.LOOP);
+    private final RawAnimation CHASE_IDLE = RawAnimation.begin().then("animation.cave_dweller.run_idle", LoopType.LOOP);
+    private final RawAnimation CROUCH_RUN = RawAnimation.begin().then("animation.cave_dweller.crouch_run_new", LoopType.LOOP);
+    private final RawAnimation CROUCH_IDLE = RawAnimation.begin().then("animation.cave_dweller.crouch_idle", LoopType.LOOP);
+    private final RawAnimation CALM_RUN = RawAnimation.begin().then("animation.cave_dweller.calm_move", LoopType.LOOP);
+    private final RawAnimation CALM_STILL = RawAnimation.begin().then("animation.cave_dweller.calm_idle", LoopType.LOOP);
+    private final RawAnimation IS_SPOTTED = RawAnimation.begin().then("animation.cave_dweller.spotted", LoopType.HOLD_ON_LAST_FRAME);
+    private final RawAnimation CRAWL = RawAnimation.begin().then("animation.cave_dweller.crawl", LoopType.HOLD_ON_LAST_FRAME);
+    private final RawAnimation FLEE = RawAnimation.begin().then("animation.cave_dweller.flee", LoopType.LOOP);
 
     public static final EntityDataAccessor<Boolean> FLEEING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
     public static final EntityDataAccessor<Boolean> CROUCHING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
@@ -166,21 +165,21 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         Random rand = new Random();
         double randX = rand.nextInt(70) - 35;
         double randZ = rand.nextInt(70) - 35;
-        double posX = playerPos.x + randX;
-        double posY = playerPos.y + 10.0;
-        double posZ = playerPos.z + randZ;
+        int posX = (int) (playerPos.x + randX);
+        int posY = (int) (playerPos.y + 10.0);
+        int posZ = (int) (playerPos.z + randZ);
 
         for (int runFor = 100; runFor >= 0; --posY) {
             BlockPos blockPosition = new BlockPos(posX, posY, posZ);
-            BlockPos blockPosition2 = new BlockPos(posX, posY + 1.0, posZ);
-            BlockPos blockPosition3 = new BlockPos(posX, posY + 2.0, posZ);
-            BlockPos blockPosition4 = new BlockPos(posX, posY - 1.0, posZ);
+            BlockPos blockPosition2 = new BlockPos(posX, posY + 1, posZ);
+            BlockPos blockPosition3 = new BlockPos(posX, posY + 2, posZ);
+            BlockPos blockPosition4 = new BlockPos(posX, posY - 1, posZ);
             --runFor;
 
-            if (!level.getBlockState(blockPosition).getMaterial().blocksMotion()
-                    && !level.getBlockState(blockPosition2).getMaterial().blocksMotion()
-                    && !level.getBlockState(blockPosition3).getMaterial().blocksMotion()
-                    && level.getBlockState(blockPosition4).getMaterial().blocksMotion()) {
+            if (!level().getBlockState(blockPosition).blocksMotion()
+                    && !level().getBlockState(blockPosition2).blocksMotion()
+                    && !level().getBlockState(blockPosition3).blocksMotion()
+                    && level().getBlockState(blockPosition4).blocksMotion()) {
                 break;
             }
         }
@@ -221,8 +220,8 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         }
 
         BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos(position().x, position().y + 2.0, position().z);
-        BlockState above = level.getBlockState(blockpos$mutableblockpos);
-        boolean blocksMotion = above.getMaterial().blocksMotion();
+        BlockState above = level().getBlockState(blockpos$mutableblockpos);
+        boolean blocksMotion = above.blocksMotion();
 
         if (blocksMotion) {
             twoBlockSpaceTimer = twoBlockSpaceCooldown;
@@ -248,12 +247,12 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             playSpottedSound();
         }
 
-        if (!level.isClientSide) {
+        if (!level().isClientSide) {
             setClimbing(horizontalCollision);
         }
 
         if (getTarget() == null) {
-            setTarget(level.getNearestPlayer(position().x, position().y, position().z, 128, Utils::isValidPlayer));
+            setTarget(level().getNearestPlayer(position().x, position().y, position().z, 128, Utils::isValidPlayer));
         }
     }
 
@@ -325,61 +324,56 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         return new WallClimberNavigation(this, level);
     }
 
-    private PlayState predicate(final AnimationEvent<CaveDwellerEntity> event) {
-        AnimationBuilder builder = new AnimationBuilder();
-        AnimationController<CaveDwellerEntity> controller = event.getController();
-
+    private PlayState predicate(final AnimationState<CaveDwellerEntity> state) {
         if (entityData.get(AGGRO_ACCESSOR)) {
             if (entityData.get(SQUEEZING_ACCESSOR)) {
                 // Squeezing
-                builder.addAnimation(CRAWL.animationName, CRAWL.loopType);
+                return state.setAndContinue(CRAWL);
             } else if (entityData.get(CROUCHING_ACCESSOR)) {
                 // Crouching
-                if (event.isMoving()) {
-                    builder.addAnimation(CROUCH_RUN.animationName, CROUCH_RUN.loopType);
+                if (state.isMoving()) {
+                    return state.setAndContinue(CROUCH_RUN);
                 } else {
-                    builder.addAnimation(CROUCH_IDLE.animationName, CROUCH_IDLE.loopType);
+                    return state.setAndContinue(CROUCH_IDLE);
                 }
             } else {
                 // Chase
-                if (event.isMoving()) {
-                    builder.addAnimation(CHASE.animationName, CHASE.loopType);
+                if (state.isMoving()) {
+                    return state.setAndContinue(CHASE);
                 } else {
-                    builder.addAnimation(CHASE_IDLE.animationName, CHASE_IDLE.loopType);
+                    return state.setAndContinue(CHASE_IDLE);
                 }
             }
         } else if (entityData.get(FLEEING_ACCESSOR)) {
             // Fleeing
-            if (event.isMoving()) {
-                builder.addAnimation(FLEE.animationName, FLEE.loopType);
+            if (state.isMoving()) {
+                return state.setAndContinue(FLEE);
             } else {
-                builder.addAnimation(CHASE_IDLE.animationName, CHASE_IDLE.loopType);
+                return state.setAndContinue(CHASE_IDLE);
             }
-        } else if (pleaseStopMoving || entityData.get(SPOTTED_ACCESSOR) && !event.isMoving()) {
+        } else if (entityData.get(SPOTTED_ACCESSOR) && !state.isMoving()) {
             // Spotted
-            builder.addAnimation(IS_SPOTTED.animationName, IS_SPOTTED.loopType);
+            return state.setAndContinue(IS_SPOTTED);
         } else {
             // Normal
-            if (event.isMoving()) {
-                builder.addAnimation(CALM_RUN.animationName, CALM_RUN.loopType);
+            if (state.isMoving()) {
+                return state.setAndContinue(CALM_RUN);
             } else {
-                builder.addAnimation(CALM_STILL.animationName, CALM_STILL.loopType);
+                return state.setAndContinue(CALM_STILL);
             }
         }
-
-        controller.setAnimation(builder);
-        return PlayState.CONTINUE;
     }
 
     @Override
-    public void registerControllers(final AnimationData data) {
-        data.addAnimationController(new AnimationController<>(this, "controller", 3, this::predicate));
+    public void registerControllers(final AnimatableManager.ControllerRegistrar registrar) {
+        registrar.add(new AnimationController<CaveDwellerEntity>(this, "controller", 3, this::predicate));
     }
 
     @Override
-    public AnimationFactory getFactory() {
-        return factory;
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return cache;
     }
+
 
     @Override
     protected void playStepSound(@NotNull BlockPos pPos, @NotNull BlockState pState) {
@@ -392,12 +386,12 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     }
 
     private void playEntitySound(SoundEvent soundEvent, float volume, float pitch) {
-        level.playSound(null, this, soundEvent, SoundSource.HOSTILE, volume, pitch);
+        level().playSound(null, this, soundEvent, SoundSource.HOSTILE, volume, pitch);
     }
 
     // TODO :: Is this needed? Why not just playEntitySound
     private void playBlockPosSound(final ResourceLocation soundResource, float volume, float pitch) {
-        if (level instanceof ServerLevel serverLevel) {
+        if (level() instanceof ServerLevel serverLevel) {
             int radius = 60; // blocks
             serverLevel.getPlayers(player -> player.distanceToSqr(this) <= radius * radius).forEach(player -> NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CaveSound(soundResource, player.blockPosition(), volume, pitch)));
         }
@@ -544,7 +538,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         BlockPos.MutableBlockPos validPosition = new BlockPos.MutableBlockPos(d1, d2, d3);
 
         // Don't teleport up into the air
-        while (validPosition.getY() > level.getMinBuildHeight() && !level.getBlockState(validPosition).getMaterial().blocksMotion()) {
+        while (validPosition.getY() > level().getMinBuildHeight() && !level().getBlockState(validPosition).blocksMotion()) {
             validPosition.move(Direction.DOWN);
         }
 

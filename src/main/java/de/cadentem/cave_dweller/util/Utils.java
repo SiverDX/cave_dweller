@@ -45,6 +45,6 @@ public class Utils {
     }
 
     public static LivingEntity getValidTarget(@NotNull final CaveDwellerEntity caveDweller) {
-        return caveDweller.level.getNearestPlayer(caveDweller.position().x, caveDweller.position().y, caveDweller.position().z, 128, Utils::isValidPlayer);
+        return caveDweller.level().getNearestPlayer(caveDweller.position().x, caveDweller.position().y, caveDweller.position().z, 128, Utils::isValidPlayer);
     }
 }
