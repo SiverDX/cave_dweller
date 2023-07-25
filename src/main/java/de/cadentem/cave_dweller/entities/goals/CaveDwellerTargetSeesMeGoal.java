@@ -33,8 +33,7 @@ public class CaveDwellerTargetSeesMeGoal extends NearestAttackableTargetGoal<Pla
         caveDweller.setTarget(target);
         caveDweller.spottedByPlayer = true;
         caveDweller.getEntityData().set(CaveDwellerEntity.SPOTTED_ACCESSOR, true);
-//        caveDweller.reRoll();
-        caveDweller.currentRoll = Roll.STARE;
+        caveDweller.reRoll();
         super.start();
     }
 
