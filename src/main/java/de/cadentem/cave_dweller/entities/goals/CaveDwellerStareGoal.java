@@ -60,8 +60,7 @@ public class CaveDwellerStareGoal extends Goal {
 
         // TODO :: Add configs?
         if (lookedAtCount > 10 && isNotLooking && caveDweller.getRandom().nextDouble() < 0.1) {
-            caveDweller.playDisappearSound();
-            caveDweller.discard();
+            caveDweller.disappear();
         }
 
         if (target != null) {
