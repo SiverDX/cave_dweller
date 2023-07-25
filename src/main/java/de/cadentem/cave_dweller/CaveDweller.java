@@ -241,6 +241,6 @@ public class CaveDweller {
             LOG.error("Configuration for `RESET_NOISE` was wrong - max [{}] was smaller than min [{}] - values have been switched to prevent a crash", max, min);
         }
 
-        noiseTimer = random.nextInt(Utils.secondsToTicks(ServerConfig.RESET_NOISE_MIN.get()), Utils.secondsToTicks(ServerConfig.RESET_NOISE_MAX.get() + 1));
+        noiseTimer = random.nextInt(Utils.secondsToTicks(min), Utils.secondsToTicks(max + 1));
     }
 }
