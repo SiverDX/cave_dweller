@@ -5,42 +5,34 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.List;
-import java.util.Random;
-
 public class CaveDwellerStareGoal extends Goal {
-    private final CaveDwellerEntity mob;
-    private float ticksUntilLeave;
-    private boolean shouldLeave;
+    private final CaveDwellerEntity caveDweller;
 
-    public CaveDwellerStareGoal(final CaveDwellerEntity mob, float ticksUntilLeave) {
-        this.mob = mob;
-        this.ticksUntilLeave = ticksUntilLeave;
+    private boolean wasNotLookingPreviously;
+    private int lookedAtCount;
+
+    public CaveDwellerStareGoal(final CaveDwellerEntity caveDweller) {
+        this.caveDweller = caveDweller;
     }
 
     @Override
     public boolean canUse() {
-        if (mob.isInvisible()) {
+        if (caveDweller.isInvisible()) {
             return false;
-        } else if (mob.getTarget() == null) {
+        } else if (caveDweller.getTarget() == null) {
             return false;
         } else {
-            return mob.currentRoll == Roll.STARE;
+            return caveDweller.currentRoll == Roll.STARE;
         }
     }
 
     @Override
     public boolean canContinueToUse() {
-        if (mob.getTarget() == null) {
+        if (caveDweller.getTarget() == null) {
             return false;
         } else {
-            return mob.currentRoll == Roll.STARE;
+            return caveDweller.currentRoll == Roll.STARE;
         }
-    }
-
-    @Override
-    public void start() {
-        shouldLeave = false;
     }
 
     @Override
@@ -51,59 +43,41 @@ public class CaveDwellerStareGoal extends Goal {
     @Override
     public void stop() {
         super.stop();
-        mob.getEntityData().set(CaveDwellerEntity.SPOTTED_ACCESSOR, false);
+        lookedAtCount = 0;
+        wasNotLookingPreviously = false;
+        caveDweller.getEntityData().set(CaveDwellerEntity.SPOTTED_ACCESSOR, false);
     }
 
     @Override
     public void tick() {
-        tickStareClock();
-        LivingEntity target = mob.getTarget();
+        LivingEntity target = caveDweller.getTarget();
 
-        if (shouldLeave) {
-            // TODO :: If the player stares for too long teleport to a random spot or apply blindness? (and reset timer)
-            if (new Random().nextDouble() < 0.5 && target != null && mob.distanceTo(target) < 15 /* Triggers before TargetTooClose goal can be triggered */) {
-                mob.pickRoll(List.of(Roll.CHASE, Roll.FLEE));
-            } else if (isTargetNotLooking()) {
-                // Once the player stops looking at it
-                mob.playDisappearSound();
-                mob.discard();
-            }
+        boolean isNotLooking = caveDweller.isTargetNotLooking();
+
+        if (wasNotLookingPreviously && !isNotLooking) {
+            lookedAtCount++;
+        }
+
+        // TODO :: Add configs?
+        if (lookedAtCount > 10 && isNotLooking && caveDweller.getRandom().nextDouble() < 0.1) {
+            caveDweller.playDisappearSound();
+            caveDweller.discard();
         }
 
         if (target != null) {
             // Move towards the player when they are not looking
-            if (isTargetNotLooking()) {
-                this.mob.getNavigation().moveTo(target, 0.5);
+            if (isNotLooking) {
+                caveDweller.pleaseStopMoving = false;
+                caveDweller.getNavigation().moveTo(target, 1);
             } else {
-                // Just stopping the navigation does not work
-                mob.getNavigation().stop();
-                mob.setDeltaMovement(new Vec3(0, 0, 0));
+                caveDweller.pleaseStopMoving = true;
+                caveDweller.getNavigation().stop();
+                caveDweller.setDeltaMovement(Vec3.ZERO);
             }
 
-            mob.getLookControl().setLookAt(target);
-        }
-    }
-
-    private void tickStareClock() {
-        --ticksUntilLeave;
-
-        if (ticksUntilLeave <= 0.0F) {
-            shouldLeave = true;
-        }
-    }
-
-    private boolean isTargetNotLooking() {
-        LivingEntity target = mob.getTarget();
-
-        if (target == null) {
-            return false;
+            caveDweller.getLookControl().setLookAt(target);
         }
 
-        Vec3 viewVector = target.getViewVector(1.0F).normalize();
-        Vec3 difference = new Vec3(mob.getX() - target.getX(), mob.getEyeY() - target.getEyeY(), mob.getZ() - target.getZ());
-        difference = difference.normalize();
-        double dot = viewVector.dot(difference);
-
-        return dot < 0; /* TODO :: Increase to 0.1 so it stops moving before player can notice that? */
+        wasNotLookingPreviously = isNotLooking;
     }
 }

@@ -8,7 +8,7 @@ import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
 
 public class CaveDwellerFleeGoal extends Goal {
-    private final CaveDwellerEntity mob;
+    private final CaveDwellerEntity caveDweller;
     private final double speedModifier;
 
     private float ticksUntilLeave;
@@ -17,8 +17,8 @@ public class CaveDwellerFleeGoal extends Goal {
     private Path fleePath;
     private int ticksUntilNextPathRecalculation;
 
-    public CaveDwellerFleeGoal(final CaveDwellerEntity mob, float ticksUntilLeave, double speedModifier) {
-        this.mob = mob;
+    public CaveDwellerFleeGoal(final CaveDwellerEntity caveDweller, float ticksUntilLeave, double speedModifier) {
+        this.caveDweller = caveDweller;
         this.ticksUntilLeave = ticksUntilLeave;
         this.ticksUntilFlee = 10.0F;
         this.speedModifier = speedModifier;
@@ -26,38 +26,38 @@ public class CaveDwellerFleeGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (mob.isInvisible()) {
+        if (caveDweller.isInvisible()) {
             return false;
-        } else if (mob.currentRoll != Roll.FLEE) {
+        } else if (caveDweller.currentRoll != Roll.FLEE) {
             return false;
         } else {
-            return mob.getTarget() != null;
+            return caveDweller.getTarget() != null;
         }
     }
 
     @Override
     public boolean canContinueToUse() {
-        if (mob.currentRoll != Roll.FLEE) {
+        if (caveDweller.currentRoll != Roll.FLEE) {
             return false;
         } else {
-            return mob.getTarget() != null;
+            return caveDweller.getTarget() != null;
         }
     }
 
     @Override
     public void start() {
         setFleePath();
-        mob.spottedByPlayer = false;
+        caveDweller.spottedByPlayer = false;
         shouldLeave = false;
     }
 
     @Override
     public void tick() {
-        LivingEntity target = mob.getTarget();
+        LivingEntity target = caveDweller.getTarget();
 
-        if (shouldLeave && (!mob.isLookingAtMe(target) || !inPlayerLineOfSight())) {
-            mob.playDisappearSound();
-            mob.discard();
+        if (shouldLeave && (!caveDweller.isLookingAtMe(target) || !caveDweller.inTargetLineOfSight())) {
+            caveDweller.playDisappearSound();
+            caveDweller.discard();
         }
 
         --ticksUntilFlee;
@@ -65,31 +65,27 @@ public class CaveDwellerFleeGoal extends Goal {
 
         if (ticksUntilFlee <= 0.0F) {
             fleeTick();
-            mob.isFleeing = true;
-            mob.getEntityData().set(CaveDwellerEntity.FLEEING_ACCESSOR, true);
+            caveDweller.isFleeing = true;
+            caveDweller.getEntityData().set(CaveDwellerEntity.FLEEING_ACCESSOR, true);
         } else if (target != null) {
-            mob.getLookControl().setLookAt(target, 180.0F, 1.0F);
+            caveDweller.getLookControl().setLookAt(target, 180.0F, 1.0F);
         }
     }
 
-    private boolean inPlayerLineOfSight() {
-        return mob.getTarget() != null && mob.getTarget().hasLineOfSight(mob);
-    }
-
     private void setFleePath() {
-        LivingEntity target = mob.getTarget();
+        LivingEntity target = caveDweller.getTarget();
 
         if (target == null) {
             return;
         }
 
-        Vec3 fleePosition = DefaultRandomPos.getPosAway(this.mob, 32, 7, target.position());
+        Vec3 fleePosition = DefaultRandomPos.getPosAway(this.caveDweller, 32, 7, target.position());
 
         if (fleePosition != null) {
-            fleePath = mob.getNavigation().createPath(fleePosition.x, fleePosition.y, fleePosition.z, 0);
+            fleePath = caveDweller.getNavigation().createPath(fleePosition.x, fleePosition.y, fleePosition.z, 0);
 
             if (fleePath == null) {
-                fleePath = mob.createShortPath(fleePosition);
+                fleePath = caveDweller.createShortPath(fleePosition);
             }
         }
     }
@@ -103,17 +99,17 @@ public class CaveDwellerFleeGoal extends Goal {
     }
 
     public void fleeTick() {
-        if (fleePath == null) {
+        if (fleePath == null || fleePath.isDone()) {
             setFleePath();
         }
 
-        mob.playFleeSound();
+        caveDweller.playFleeSound();
         ticksUntilNextPathRecalculation = Math.max(ticksUntilNextPathRecalculation - 1, 0);
 
         if (ticksUntilNextPathRecalculation == 0) {
             ticksUntilNextPathRecalculation = 2;
 
-            if (!mob.getNavigation().moveTo(fleePath, speedModifier)) {
+            if (!caveDweller.getNavigation().moveTo(fleePath, speedModifier)) {
                 ticksUntilNextPathRecalculation += 2;
             }
 

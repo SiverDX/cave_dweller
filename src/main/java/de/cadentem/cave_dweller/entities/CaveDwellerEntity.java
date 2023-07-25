@@ -7,6 +7,7 @@ import de.cadentem.cave_dweller.network.NetworkHandler;
 import de.cadentem.cave_dweller.registry.ModSounds;
 import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -51,14 +52,6 @@ import java.util.Random;
 public class CaveDwellerEntity extends Monster implements IAnimatable {
     private final AnimationFactory factory = GeckoLibUtil.createFactory(this);
 
-    public Roll currentRoll = Roll.STROLL;
-    public boolean fakeSize = false;
-    private boolean inTwoBlockSpace = false;
-    public boolean spottedByPlayer = false;
-    public boolean squeezeCrawling = false;
-    public boolean isFleeing;
-    private int ticksTillRemove;
-
     // TODO :: 2 unused animations
     private final RawAnimation OLD_RUN = new RawAnimation("animation.cave_dweller.run", ILoopType.EDefaultLoopTypes.LOOP);
     private final RawAnimation IDLE = new RawAnimation("animation.cave_dweller.idle", ILoopType.EDefaultLoopTypes.LOOP);
@@ -80,18 +73,28 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     public static final EntityDataAccessor<Boolean> CLIMBING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
 
     private final float twoBlockSpaceCooldown;
-    private float twoBlockSpaceTimer = 0.0F;
-    private int chaseSoundClock = 0;
-    private boolean alreadyPlayedFleeSound = false;
-    private boolean alreadyPlayedSpottedSound = false;
-    private boolean startedPlayingChaseSound = false;
-    private boolean alreadyPlayedDeathSound = false;
+
+    public Roll currentRoll = Roll.STROLL;
+    public boolean fakeSize;
+    public boolean isFleeing;
+    public boolean spottedByPlayer;
+    public boolean squeezeCrawling;
+    public boolean pleaseStopMoving;
+
+    private float twoBlockSpaceTimer;
+    private int ticksTillRemove;
+    private int chaseSoundClock;
+    private boolean inTwoBlockSpace;
+    private boolean alreadyPlayedFleeSound;
+    private boolean alreadyPlayedSpottedSound;
+    private boolean startedPlayingChaseSound;
+    private boolean alreadyPlayedDeathSound;
 
     public CaveDwellerEntity(final EntityType<? extends CaveDwellerEntity> entityType, final Level level) {
         super(entityType, level);
         this.refreshDimensions();
         this.twoBlockSpaceCooldown = 5.0F;
-        this.ticksTillRemove = Utils.secondsToTicks(ServerConfig.TIME_UNTIL_LEAVE_CHASE.get());
+        this.ticksTillRemove = Utils.secondsToTicks(ServerConfig.TIME_UNTIL_LEAVE.get());
     }
 
     @Override
@@ -101,8 +104,6 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         setAttribute(getAttribute(Attributes.ATTACK_SPEED), ServerConfig.ATTACK_SPEED.get());
         setAttribute(getAttribute(Attributes.MOVEMENT_SPEED), ServerConfig.MOVEMENT_SPEED.get());
         setAttribute(getAttribute(ForgeMod.STEP_HEIGHT_ADDITION.get()), 0.4); // LivingEntity default is 0.6
-
-//        ((WallClimberNavigation) getNavigation()).setCanOpenDoors(true);
 
         return super.finalizeSpawn(level, difficulty, reason, spawnData, tagData);
     }
@@ -151,7 +152,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         goalSelector.addGoal(1, new CaveDwellerChaseGoal(this,  0.85F, true, 20.0F));
         goalSelector.addGoal(1, new CaveDwellerFleeGoal(this, 20.0F, 1.0));
         goalSelector.addGoal(2, new CaveDwellerBreakInvisGoal(this));
-        goalSelector.addGoal(2, new CaveDwellerStareGoal(this, Utils.secondsToTicks(ServerConfig.TIME_STARING.get())));
+        goalSelector.addGoal(2, new CaveDwellerStareGoal(this));
         if (ServerConfig.CAN_BREAK_DOOR.get()) {
             goalSelector.addGoal(2, new CaveDwellerBreakDoorGoal(this, difficulty -> true));
         }
@@ -187,10 +188,10 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         return new Vec3(posX, posY, posZ);
     }
 
-    @Override /* TODO :: Might not be used for mobs */
+    @Override
     protected boolean canRide(@NotNull final Entity vehicle) {
         if (ServerConfig.ALLOW_RIDING.get()) {
-            super.canRide(vehicle);
+            return super.canRide(vehicle);
         }
 
         return false;
@@ -249,6 +250,10 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
 
         if (!level.isClientSide) {
             setClimbing(horizontalCollision);
+        }
+
+        if (getTarget() == null) {
+            setTarget(level.getNearestPlayer(position().x, position().y, position().z, 128, Utils::isValidPlayer));
         }
     }
 
@@ -350,7 +355,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             } else {
                 builder.addAnimation(CHASE_IDLE.animationName, CHASE_IDLE.loopType);
             }
-        } else if (entityData.get(SPOTTED_ACCESSOR) && !event.isMoving()) {
+        } else if (pleaseStopMoving || entityData.get(SPOTTED_ACCESSOR) && !event.isMoving()) {
             // Spotted
             builder.addAnimation(IS_SPOTTED.animationName, IS_SPOTTED.loopType);
         } else {
@@ -393,7 +398,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     // TODO :: Is this needed? Why not just playEntitySound
     private void playBlockPosSound(final ResourceLocation soundResource, float volume, float pitch) {
         if (level instanceof ServerLevel serverLevel) {
-            int radius = 10; // blocks
+            int radius = 60; // blocks
             serverLevel.getPlayers(player -> player.distanceToSqr(this) <= radius * radius).forEach(player -> NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CaveSound(soundResource, player.blockPosition(), volume, pitch)));
         }
     }
@@ -484,9 +489,8 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         }
     }
 
-    /** Referenced from {@link net.minecraft.world.entity.monster.EnderMan#isLookingAtMe(Player)} */
-    public boolean isLookingAtMe(final Entity pendingTarget) {
-        if (!(pendingTarget instanceof Player player)) {
+    public boolean isLookingAtMe(final Entity entity) {
+        if (!(entity instanceof Player player)) {
             return false;
         }
 
@@ -498,13 +502,61 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             return false;
         }
 
-        Vec3 viewVector = player.getViewVector(1.0F).normalize();
-        Vec3 difference = new Vec3(getX() - player.getX(), getEyeY() - player.getEyeY(), getZ() - player.getZ());
-        double length = difference.length();
+        return isLooking(player);
+    }
+
+    public boolean isTargetNotLooking() {
+        LivingEntity target = getTarget();
+
+        if (target == null) {
+            return false;
+        }
+
+        return !isLooking(target);
+    }
+
+    private boolean isLooking(final LivingEntity target) {
+        Vec3 viewVector = target.getViewVector(1.0F).normalize();
+        Vec3 difference = new Vec3(getX() - target.getX(), getEyeY() - target.getEyeY(), getZ() - target.getZ());
         difference = difference.normalize();
         double dot = viewVector.dot(difference);
 
-        return dot > 1.0D - 0.025D / length && player.hasLineOfSight(this);
+        return dot > 0 && target.hasLineOfSight(this);
+    }
+
+    // TODO :: Unused
+    private void teleport() {
+        LivingEntity target = getTarget();
+
+        if (target == null) {
+            return;
+        }
+
+        Vec3 targetPosition = new Vec3(getX() - target.getX(), getY(0.5D) - target.getEyeY(), getZ() - target.getZ());
+        targetPosition = targetPosition.normalize();
+
+        double radius = 32;
+
+        double d1 = getX() + (getRandom().nextDouble() - 0.5D) * (radius / 2) - targetPosition.x * radius;
+        double d2 = getY() + (getRandom().nextInt((int) radius) - (radius / 2)) - targetPosition.y * radius;
+        double d3 = getZ() + (getRandom().nextDouble() - 0.5D) * (radius / 2) - targetPosition.z * radius;
+
+        BlockPos.MutableBlockPos validPosition = new BlockPos.MutableBlockPos(d1, d2, d3);
+
+        // Don't teleport up into the air
+        while (validPosition.getY() > level.getMinBuildHeight() && !level.getBlockState(validPosition).getMaterial().blocksMotion()) {
+            validPosition.move(Direction.DOWN);
+        }
+
+        teleportTo(validPosition.getX(), validPosition.getY(), validPosition.getZ());
+    }
+
+    public boolean inTargetLineOfSight() {
+        return getTarget() != null && getTarget().hasLineOfSight(this);
+    }
+
+    public boolean inLineOfSight(final LivingEntity target) {
+        return target != null && target.hasLineOfSight(this);
     }
 
     @Override
