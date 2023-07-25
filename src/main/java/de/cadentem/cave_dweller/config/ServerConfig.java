@@ -69,7 +69,7 @@ public class ServerConfig {
         CAN_BREAK_DOOR = BUILDER.comment("Whether the cave dweller can break down doors or not").define("can_break_door", true);
         BREAK_DOOR_TIME = BUILDER.comment("Time (in seconds) it takes the Cave Dweller to break down a door").defineInRange("break_door_time", 3, 1, 60);
         ALLOW_RIDING = BUILDER.comment("Allow the Cave Dweller to follow vanilla riding logic (e.g. boats)").define("allow_riding", false);
-        TARGET_INVISIBLE = BUILDER.comment("Whether invisible players can be targets or not").define("ignore_invisible", true);
+        TARGET_INVISIBLE = BUILDER.comment("Whether invisible players can be targets or not").define("target_invisible", true);
         BUILDER.pop();
 
         BUILDER.push("Attributes");
