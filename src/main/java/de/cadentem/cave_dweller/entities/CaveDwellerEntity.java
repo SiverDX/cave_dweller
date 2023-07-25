@@ -187,6 +187,11 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
         return new Vec3(posX, posY, posZ);
     }
 
+    public void disappear() {
+        playDisappearSound();
+        discard();
+    }
+
     @Override
     protected boolean canRide(@NotNull final Entity vehicle) {
         if (ServerConfig.ALLOW_RIDING.get()) {
@@ -210,8 +215,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
         --ticksTillRemove;
 
         if (ticksTillRemove <= 0) {
-            playDisappearSound();
-            discard();
+            disappear();
         }
 
         if (goalSelector.getAvailableGoals().isEmpty()) {
@@ -518,17 +522,17 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
     }
 
     // TODO :: Unused
-    private void teleport() {
+    public boolean teleportToTarget() {
         LivingEntity target = getTarget();
 
         if (target == null) {
-            return;
+            return false;
         }
 
         Vec3 targetPosition = new Vec3(getX() - target.getX(), getY(0.5D) - target.getEyeY(), getZ() - target.getZ());
         targetPosition = targetPosition.normalize();
 
-        double radius = 32;
+        double radius = 16;
 
         double d1 = getX() + (getRandom().nextDouble() - 0.5D) * (radius / 2) - targetPosition.x * radius;
         double d2 = getY() + (getRandom().nextInt((int) radius) - (radius / 2)) - targetPosition.y * radius;
@@ -542,6 +546,8 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
         }
 
         teleportTo(validPosition.getX(), validPosition.getY(), validPosition.getZ());
+
+        return true;
     }
 
     public boolean inTargetLineOfSight() {

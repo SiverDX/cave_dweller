@@ -112,7 +112,7 @@ public class CaveDwellerChaseGoal extends Goal {
         if (target == null) {
             return false;
         } else if (!target.isAlive()) {
-            caveDweller.discard();
+            caveDweller.disappear();
             return false;
         } else if (!followTargetEvenIfNotSeen) {
             return !caveDweller.getNavigation().isDone();
@@ -175,7 +175,7 @@ public class CaveDwellerChaseGoal extends Goal {
 
         --ticksUntilLeave;
         if (ticksUntilLeave <= 0 && (!caveDweller.isLookingAtMe(target) || !inPlayerLineOfSight())) {
-            caveDweller.discard();
+            caveDweller.disappear();
         }
     }
 
