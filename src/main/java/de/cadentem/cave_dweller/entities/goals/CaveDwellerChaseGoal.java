@@ -203,9 +203,42 @@ public class CaveDwellerChaseGoal extends Goal {
 
         caveDweller.getNavigation().stop();
 
+        /*
+        if (nodePosition == null || caveDweller.getTarget() == null) {
+            stopSqueezing();
+            return;
+        }
+
+        BlockState above = caveDweller.level.getBlockState(nodePosition.above());
+
+        if (above.getMaterial().isSolid()) {
+            ++currentTicksToSqueeze;
+
+            // Smooth out the crawling speed
+            float lerpPercentage = (float) currentTicksToSqueeze / (float) ticksToSqueeze;
+
+            Vec3 lerped = caveDweller.position().lerp(caveDweller.getTarget().position(), lerpPercentage);
+
+            Vec3 rotAxis = new Vec3(nodePosition.getX() - caveDweller.position().x, 0.0, nodePosition.getZ() - caveDweller.position().z);
+            rotAxis = rotAxis.normalize();
+
+            double rotAngle = Math.toDegrees(Math.atan2(-rotAxis.x, rotAxis.z));
+            caveDweller.setYHeadRot((float) rotAngle);
+            caveDweller.moveTo(lerped.x, lerped.y, lerped.z, (float) rotAngle, (float) rotAngle);
+
+            if (lerpPercentage >= 1.0F) {
+                // Finished squeezing
+                caveDweller.setPos(new Vec3(nodePosition.getX(), nodePosition.getY(), nodePosition.getZ()));
+                stopSqueezing();
+            }
+        } else {
+            stopSqueezing();
+        }
+        */
+
         if (nodePosition == null) {
             stopSqueezing();
-        } else {
+        } else if (caveDweller.getTarget() != null) {
             if (vecNodePosition == null) {
                 vecNodePosition = new Vec3(nodePosition.getX(), nodePosition.getY(), nodePosition.getZ());
             }
@@ -214,6 +247,7 @@ public class CaveDwellerChaseGoal extends Goal {
             Vec3 vecOldMobPos = caveDweller.getPosition(1.0F);
 
             if (xPathStartVec == null) {
+                // Where the mob needs to move along the x-axis
                 if (vecOldMobPos.x < vecNodePosition.x) {
                     xPathStartVec = new Vec3(vecNodePosition.x - 1.0, vecNodePosition.y - 1.0, vecNodePosition.z + 0.5);
                     xPathTargetVec = new Vec3(vecNodePosition.x + 1.0, vecNodePosition.y - 1.0, vecNodePosition.z + 0.5);
@@ -224,6 +258,7 @@ public class CaveDwellerChaseGoal extends Goal {
             }
 
             if (zPathStartVec == null) {
+                // Where the mob needs to move along the z-axis
                 if (vecOldMobPos.z < vecNodePosition.z) {
                     zPathStartVec = new Vec3(vecNodePosition.x + 0.5, vecNodePosition.y - 1.0, vecNodePosition.z - 1.0);
                     zPathTargetVec = new Vec3(vecNodePosition.x + 0.5, vecNodePosition.y - 1.0, vecNodePosition.z + 1.0);
@@ -233,8 +268,8 @@ public class CaveDwellerChaseGoal extends Goal {
                 }
             }
 
+            // Check if the block at the possible target is solid
             BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos(xPathTargetVec.x, xPathTargetVec.y, xPathTargetVec.z);
-
             BlockState blockstate = caveDweller.level.getBlockState(blockpos$mutableblockpos);
             boolean xBlocked = blockstate.getMaterial().blocksMotion();
 
@@ -242,12 +277,21 @@ public class CaveDwellerChaseGoal extends Goal {
             blockstate = caveDweller.level.getBlockState(blockpos$mutableblockpos);
             boolean zBlocked = blockstate.getMaterial().blocksMotion();
 
-            if (xBlocked) {
+            /* FIXME
+            Without this the Cave Dweller will bug out if he has to move on the x-axis to get to the player
+            If the blocks are set like this:
+            xxxxx
+                x
+            x   x
+            xxxxx
+            */
+            double xDifference = caveDweller.getTarget().getX() - caveDweller.getX();
+            double zDifference = caveDweller.getTarget().getZ() - caveDweller.getZ();
+
+            if (xBlocked && Math.abs(zDifference) > Math.abs(xDifference)) {
                 vecMobPos = zPathStartVec;
                 vecTargetPos = zPathTargetVec;
-            }
-
-            if (zBlocked) {
+            } else if (zBlocked) {
                 vecMobPos = xPathStartVec;
                 vecTargetPos = xPathTargetVec;
             }
@@ -255,12 +299,13 @@ public class CaveDwellerChaseGoal extends Goal {
             if (vecTargetPos != null && vecMobPos != null) {
                 ++currentTicksToSqueeze;
 
-                float tickF = (float) currentTicksToSqueeze / (float) ticksToSqueeze;
+                // Smooth out the crawling speed
+                float lerpPercentage = (float) currentTicksToSqueeze / (float) ticksToSqueeze;
 
                 Vec3 vecCurrentMobPos = new Vec3(
-                        lerp(vecMobPos.x, vecTargetPos.x, tickF),
+                        lerp(vecMobPos.x, vecTargetPos.x, lerpPercentage),
                         vecMobPos.y,
-                        lerp(vecMobPos.z, vecTargetPos.z, tickF)
+                        lerp(vecMobPos.z, vecTargetPos.z, lerpPercentage)
                 );
 
                 Vec3 rotAxis = new Vec3(vecTargetPos.x - vecMobPos.x, 0.0, vecTargetPos.z - vecMobPos.z);
@@ -270,7 +315,7 @@ public class CaveDwellerChaseGoal extends Goal {
                 caveDweller.setYHeadRot((float) rotAngle);
                 caveDweller.moveTo(vecCurrentMobPos.x, vecCurrentMobPos.y, vecCurrentMobPos.z, (float) rotAngle, (float) rotAngle);
 
-                if (tickF >= 1.0F) {
+                if (lerpPercentage >= 1.0F) {
                     caveDweller.setPos(vecTargetPos.x, vecTargetPos.y, vecTargetPos.z);
                     stopSqueezing();
                 }
@@ -309,7 +354,7 @@ public class CaveDwellerChaseGoal extends Goal {
                 blockPosition = pathToCheck.getNextNodePos();
 
                 // Don't bother checking if the block to check is at the same location as the previous check
-                if (previousNodePosition != null && blockPosition.getX() == (int) previousNodePosition.x && blockPosition.getY() == (int) previousNodePosition.y && blockPosition.getZ() == (int) previousNodePosition.z) {
+                if (previousNodePosition != null && blockPosition.getX() == previousNodePosition.x && blockPosition.getY() == previousNodePosition.y && blockPosition.getZ() == previousNodePosition.z) {
                     return false;
                 } else {
                     BlockState blockstate = caveDweller.level.getBlockState(blockPosition.above());

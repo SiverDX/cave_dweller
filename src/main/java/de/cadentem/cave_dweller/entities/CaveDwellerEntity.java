@@ -78,7 +78,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     public boolean fakeSize;
     public boolean isFleeing;
     public boolean spottedByPlayer;
-    public boolean squeezeCrawling;
+    public boolean squeezeCrawling; // FIXME :: This is basically just `squeezing` from the chase goal
     public boolean pleaseStopMoving;
 
     private float twoBlockSpaceTimer;
@@ -153,7 +153,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         goalSelector.addGoal(1, new CaveDwellerFleeGoal(this, 20.0F, 1.0));
         goalSelector.addGoal(2, new CaveDwellerBreakInvisGoal(this));
         goalSelector.addGoal(2, new CaveDwellerStareGoal(this));
-        if (ServerConfig.CAN_BREAK_DOOR.get()) {
+        if (ServerConfig.CAN_BREAK_DOOR.get()) { // TODO :: Remove for already spawned entities on config change?
             goalSelector.addGoal(2, new CaveDwellerBreakDoorGoal(this, difficulty -> true));
         }
         goalSelector.addGoal(3, new CaveDwellerStrollGoal(this, 0.7));
@@ -219,9 +219,10 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             disappear();
         }
 
-        if (goalSelector.getAvailableGoals().isEmpty()) {
+        if (goalSelector.getAvailableGoals().isEmpty() || targetSelector.getAvailableGoals().isEmpty()) {
             registerGoals();
             goalSelector.tick();
+            targetSelector.tick();
         }
 
         BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos(position().x, position().y + 2.0, position().z);
@@ -263,7 +264,8 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
 
     @Override
     public @NotNull EntityDimensions getDimensions(@NotNull final Pose pose) {
-        return fakeSize ? new EntityDimensions(0.5F, 0.9F, true) : new EntityDimensions(0.5F, 1.9F, true);
+        // TODO
+        return fakeSize ? new EntityDimensions(0.4F, 0.9F, true) : new EntityDimensions(0.4F, 1.9F, true);
     }
 
     private boolean isMoving() {
