@@ -1,11 +1,9 @@
 **CurseForge**: https://www.curseforge.com/minecraft/mc-mods/cave-dweller-evolved
 
 # Features
-* Original mod features
-* Fixed some issues
-* Scuffed climbing (has no animation)
-* Cave Dweller has depth strider
+* Additional behaviours (mostly configurable)
 * Configs (spawn timer, attributes, some behaviour parts, etc.)
+* Fixed some issues
 
 # Installation
 Requires GeckoLib: https://www.curseforge.com/minecraft/mc-mods/geckolib/files?version=1.19.2&gameVersionTypeId=1
@@ -16,6 +14,9 @@ Recommend using https://www.curseforge.com/minecraft/texture-packs/creepier-cave
 * Delete everything except the `geo` and `textures` directories
 
 # To Consider
+## General
+* Split up config a bit
+
 ## Bugs
 * Rails / half blocks cause problems with squeezing
 * Hitbox too small

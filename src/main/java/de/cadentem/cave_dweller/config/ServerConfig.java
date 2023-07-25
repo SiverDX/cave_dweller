@@ -29,6 +29,7 @@ public class ServerConfig {
     public static ForgeConfigSpec.ConfigValue<Boolean> CAN_BREAK_DOOR;
     public static ForgeConfigSpec.ConfigValue<Integer> BREAK_DOOR_TIME;
     public static ForgeConfigSpec.ConfigValue<Boolean> ALLOW_RIDING;
+    public static ForgeConfigSpec.ConfigValue<Boolean> TARGET_INVISIBLE;
 
     public static ForgeConfigSpec.ConfigValue<Double> MAX_HEALTH;
     public static ForgeConfigSpec.ConfigValue<Double> ATTACK_DAMAGE;
@@ -59,7 +60,7 @@ public class ServerConfig {
         BUILDER.pop();
 
         BUILDER.push("Behaviour");
-        SPOTTING_RANGE = BUILDER.comment("The distance in blocks at which the Cave Dweller can detect whether a player is looking at it or not").defineInRange("spotting_range", 40, 0, 128);
+        SPOTTING_RANGE = BUILDER.comment("The distance in blocks at which the Cave Dweller can detect whether a player is looking at it or not").defineInRange("spotting_range", 60, 0, 128);
         TIME_STARING = BUILDER.comment("Time (in seconds) the Cave Dweller will stare at the player (once spotted) before taking a new action or leaving").defineInRange("time_staring", 7, 0, 60);
         TIME_UNTIL_LEAVE = BUILDER.comment("Time (in seconds) it takes for the Cave Dweller to leave").defineInRange("time_until_leave", 300, 1, 6000);
         TIME_UNTIL_LEAVE_CHASE = BUILDER.comment("Time (in seconds) it takes for the Cave Dweller to leave once a chase begins").defineInRange("time_until_leave_chase", 30, 1, 600);
@@ -68,6 +69,7 @@ public class ServerConfig {
         CAN_BREAK_DOOR = BUILDER.comment("Whether the cave dweller can break down doors or not").define("can_break_door", true);
         BREAK_DOOR_TIME = BUILDER.comment("Time (in seconds) it takes the Cave Dweller to break down a door").defineInRange("break_door_time", 3, 1, 60);
         ALLOW_RIDING = BUILDER.comment("Allow the Cave Dweller to follow vanilla riding logic (e.g. boats)").define("allow_riding", false);
+        TARGET_INVISIBLE = BUILDER.comment("Whether invisible players can be targets or not").define("ignore_invisible", true);
         BUILDER.pop();
 
         BUILDER.push("Attributes");
