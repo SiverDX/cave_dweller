@@ -96,6 +96,7 @@ public class CaveDweller {
             resetNoiseTimer();
             resetCalmTimer();
             doReload = false;
+            LOG.info("Values have been reloaded");
         }
 
         ServerLevel overworld = event.getServer().getLevel(Level.OVERWORLD);
@@ -210,14 +211,37 @@ public class CaveDweller {
     }
 
     private void resetCalmTimer() {
+
         if (random.nextDouble() <= ServerConfig.RESET_CALM_COOLDOWN_CHANCE.get()) {
             calmTimer = Utils.secondsToTicks(ServerConfig.RESET_CALM_COOLDOWN.get());
         } else {
-            calmTimer = random.nextInt(Utils.secondsToTicks(ServerConfig.RESET_CALM_MIN.get()), Utils.secondsToTicks(ServerConfig.RESET_CALM_MAX.get() + 1));
+            int min = ServerConfig.RESET_CALM_MIN.get();
+            int max = ServerConfig.RESET_CALM_MAX.get();
+
+            if (max < min) {
+                int temp = min;
+                min = max;
+                max = temp;
+
+                LOG.error("Configuration for `RESET_CALM` was wrong - max [{}] was smaller than min [{}] - values have been switched to prevent a crash", max, min);
+            }
+
+            calmTimer = random.nextInt(Utils.secondsToTicks(min), Utils.secondsToTicks(max + 1));
         }
     }
 
     private void resetNoiseTimer() {
+        int min = ServerConfig.RESET_NOISE_MIN.get();
+        int max = ServerConfig.RESET_NOISE_MAX.get();
+
+        if (max < min) {
+            int temp = min;
+            min = max;
+            max = temp;
+
+            LOG.error("Configuration for `RESET_NOISE` was wrong - max [{}] was smaller than min [{}] - values have been switched to prevent a crash", max, min);
+        }
+
         noiseTimer = random.nextInt(Utils.secondsToTicks(ServerConfig.RESET_NOISE_MIN.get()), Utils.secondsToTicks(ServerConfig.RESET_NOISE_MAX.get() + 1));
     }
 }
