@@ -4,7 +4,7 @@ import de.cadentem.cave_dweller.CaveDweller;
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.event.entity.living.LivingDamageEvent;
+import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -15,7 +15,7 @@ public class ForgeEvents {
     private static final ConcurrentHashMap<Integer, Integer> HIT_COUNTER = new ConcurrentHashMap<>();
 
     @SubscribeEvent
-    public static void handleDamage(final LivingDamageEvent event) {
+    public static void handleHurt(final LivingAttackEvent event) {
         LivingEntity entity = event.getEntity();
 
         if (entity instanceof CaveDwellerEntity caveDweller) {
@@ -33,6 +33,8 @@ public class ForgeEvents {
                         caveDweller.disappear();
                     }
                 }
+
+                event.setCanceled(true);
             }
         }
     }

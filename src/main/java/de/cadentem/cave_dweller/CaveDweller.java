@@ -116,7 +116,7 @@ public class CaveDweller {
         });
 
         --noiseTimer;
-        if (noiseTimer <= 0 && (dwellerExists.get() || calmTimer <= Utils.secondsToTicks(ServerConfig.RESET_CALM_MAX.get()) / 2)) {
+        if (noiseTimer <= 0 && (dwellerExists.get() || calmTimer <= Utils.secondsToTicks(ServerConfig.CAN_SPAWN_MAX.get()) / 2)) {
             overworld.getPlayers(this::playCaveSoundToSpelunkers);
             resetNoiseTimer();
         }
@@ -212,11 +212,11 @@ public class CaveDweller {
 
     private void resetCalmTimer() {
 
-        if (random.nextDouble() <= ServerConfig.RESET_CALM_COOLDOWN_CHANCE.get()) {
-            calmTimer = Utils.secondsToTicks(ServerConfig.RESET_CALM_COOLDOWN.get());
+        if (random.nextDouble() <= ServerConfig.CAN_SPAWN_COOLDOWN_CHANCE.get()) {
+            calmTimer = Utils.secondsToTicks(ServerConfig.CAN_SPAWN_COOLDOWN.get());
         } else {
-            int min = ServerConfig.RESET_CALM_MIN.get();
-            int max = ServerConfig.RESET_CALM_MAX.get();
+            int min = ServerConfig.CAN_SPAWN_MIN.get();
+            int max = ServerConfig.CAN_SPAWN_MAX.get();
 
             if (max < min) {
                 int temp = min;
