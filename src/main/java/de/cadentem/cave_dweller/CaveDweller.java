@@ -45,6 +45,8 @@ public class CaveDweller {
     public static final String MODID = "cave_dweller";
     public static final Logger LOG = LogUtils.getLogger();
 
+    public static boolean doReload;
+
     private final List<Player> spelunkers = new ArrayList<>();
     private final Random random = new Random();
 
@@ -79,9 +81,7 @@ public class CaveDweller {
 
     @SubscribeEvent
     public void serverStartup(final ServerStartedEvent event) {
-        spelunkers.clear();
-        resetNoiseTimer();
-        resetCalmTimer();
+        doReload = true;
     }
 
     @SubscribeEvent
@@ -89,6 +89,13 @@ public class CaveDweller {
         if (event.phase == TickEvent.Phase.END) {
             // Prevent ticking twice per server tick
             return;
+        }
+
+        if (doReload) {
+            spelunkers.clear();
+            resetNoiseTimer();
+            resetCalmTimer();
+            doReload = false;
         }
 
         ServerLevel overworld = event.getServer().getLevel(Level.OVERWORLD);
