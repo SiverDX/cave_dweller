@@ -56,8 +56,7 @@ public class CaveDwellerFleeGoal extends Goal {
         LivingEntity target = caveDweller.getTarget();
 
         if (shouldLeave && (!caveDweller.isLookingAtMe(target) || !caveDweller.inTargetLineOfSight())) {
-            caveDweller.playDisappearSound();
-            caveDweller.discard();
+            caveDweller.disappear();
         }
 
         --ticksUntilFlee;
