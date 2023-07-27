@@ -152,12 +152,17 @@ public class CaveDwellerChaseGoal extends Goal {
 
     @Override
     public void tick() {
-        caveDweller.squeezeCrawling = squeezing;
         LivingEntity target = caveDweller.getTarget();
+
+        if (!Utils.isValidPlayer(target)) {
+            return;
+        }
+
+        caveDweller.squeezeCrawling = squeezing;
 
         tickAggroClock();
 
-        if (!squeezing && target != null) {
+        if (!squeezing) {
             if (caveDweller.isAggressive()) {
                 caveDweller.getLookControl().setLookAt(target, 90.0F, 90.0F);
             } else {
@@ -224,10 +229,12 @@ public class CaveDwellerChaseGoal extends Goal {
 
             double rotAngle = Math.toDegrees(Math.atan2(-rotAxis.x, rotAxis.z));
             caveDweller.setYHeadRot((float) rotAngle);
+            // Maybe need to update the entity dimensions here?
             caveDweller.moveTo(lerped.x, lerped.y, lerped.z, (float) rotAngle, (float) rotAngle);
 
             if (lerpPercentage >= 1.0F) {
                 // Finished squeezing
+                // Maybe need to set the position to the next node position?
                 caveDweller.setPos(new Vec3(nodePosition.getX(), nodePosition.getY(), nodePosition.getZ()));
                 stopSqueezing();
             }
@@ -288,6 +295,7 @@ public class CaveDwellerChaseGoal extends Goal {
             double xDifference = caveDweller.getTarget().getX() - caveDweller.getX();
             double zDifference = caveDweller.getTarget().getZ() - caveDweller.getZ();
 
+            // FIXME :: Add y offset for certain situations to prevent it from bugging into the ground
             if (xBlocked && Math.abs(zDifference) > Math.abs(xDifference)) {
                 vecMobPos = zPathStartVec;
                 vecTargetPos = zPathTargetVec;
@@ -367,8 +375,13 @@ public class CaveDwellerChaseGoal extends Goal {
     }
 
     private void aggroTick() {
-        caveDweller.playChaseSound();
         LivingEntity target = caveDweller.getTarget();
+
+        if (!Utils.isValidPlayer(target)) {
+            return;
+        }
+
+        caveDweller.playChaseSound();
 
         boolean shouldUseShortPath = true;
         Path path = caveDweller.getNavigation().getPath();
@@ -378,7 +391,13 @@ public class CaveDwellerChaseGoal extends Goal {
 
             if (finalPathPoint != null && !path.isDone()) {
                 shouldUseShortPath = false;
-            }
+            }/* else {
+                path = caveDweller.getNavigation().createPath(target, 0);
+
+                if (path != null && !path.isDone()) {
+                    shouldUseShortPath = false;
+                }
+            }*/
         }
 
         if (shouldUseShortPath) {
@@ -390,7 +409,7 @@ public class CaveDwellerChaseGoal extends Goal {
             startSqueezing();
             squeezing = true;
             caveDweller.getEntityData().set(CaveDwellerEntity.SQUEEZING_ACCESSOR, true);
-        } else if (target != null) {
+        } else {
             double distance = caveDweller.distanceToSqr(target);
             ticksUntilNextPathRecalculation = Math.max(ticksUntilNextPathRecalculation - 1, 0);
 

@@ -224,6 +224,10 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
             targetSelector.tick();
         }
 
+//        if (getTarget() == null) {
+//            setTarget(level.getNearestPlayer(position().x, position().y, position().z, 128, Utils::isValidPlayer));
+//        }
+
         BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos(position().x, position().y + 2.0, position().z);
         BlockState above = level.getBlockState(blockpos$mutableblockpos);
         boolean blocksMotion = above.getMaterial().blocksMotion();
@@ -244,20 +248,14 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
             entityData.set(SPOTTED_ACCESSOR, false);
         }
 
+        setClimbing(horizontalCollision);
+
         super.tick();
 
         entityData.set(CROUCHING_ACCESSOR, inTwoBlockSpace);
 
         if (entityData.get(SPOTTED_ACCESSOR)) {
             playSpottedSound();
-        }
-
-        if (!level.isClientSide) {
-            setClimbing(horizontalCollision);
-        }
-
-        if (getTarget() == null) {
-            setTarget(level.getNearestPlayer(position().x, position().y, position().z, 128, Utils::isValidPlayer));
         }
     }
 
@@ -314,7 +312,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
             return false;
         }
 
-        if (getTarget() != null && getTarget().getPosition(1).y > getY()) {
+        if (getTarget() != null /*&& getTarget().getPosition(1).y > getY()*/) {
             return entityData.get(CLIMBING_ACCESSOR);
         }
 
@@ -322,7 +320,9 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
     }
 
     public void setClimbing(boolean isClimbing) {
-        entityData.set(CLIMBING_ACCESSOR, isClimbing);
+        if (level instanceof ServerLevel) {
+            entityData.set(CLIMBING_ACCESSOR, isClimbing);
+        }
     }
 
     @Override
