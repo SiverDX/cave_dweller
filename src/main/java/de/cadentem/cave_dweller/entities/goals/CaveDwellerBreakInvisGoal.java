@@ -1,8 +1,6 @@
 package de.cadentem.cave_dweller.entities.goals;
 
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
-import de.cadentem.cave_dweller.util.Utils;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 
 public class CaveDwellerBreakInvisGoal extends Goal {
@@ -14,8 +12,7 @@ public class CaveDwellerBreakInvisGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        LivingEntity target = Utils.getValidTarget(caveDweller);
-        return caveDweller.isInvisible() && (!caveDweller.inLineOfSight(target) || !caveDweller.isLookingAtMe(target));
+        return caveDweller.isInvisible() && !caveDweller.targetIsLookingAtMe;
     }
 
     @Override

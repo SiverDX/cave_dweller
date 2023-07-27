@@ -20,7 +20,7 @@ public class ForgeEvents {
 
         if (entity instanceof CaveDwellerEntity caveDweller) {
             // TODO :: Also do it for OUT_OF_WORLD?
-            if (event.getSource() == DamageSource.DROWN || event.getSource() == DamageSource.IN_WALL) {
+            if (event.getSource() == DamageSource.DROWN) {
                 HIT_COUNTER.merge(caveDweller.getId(), 1, Integer::sum);
 
                 if (HIT_COUNTER.get(caveDweller.getId()) > 5) {
@@ -34,6 +34,8 @@ public class ForgeEvents {
                     }
                 }
 
+                event.setCanceled(true);
+            } else if (event.getSource() == DamageSource.IN_WALL || event.getSource() == DamageSource.FALL) {
                 event.setCanceled(true);
             }
         }

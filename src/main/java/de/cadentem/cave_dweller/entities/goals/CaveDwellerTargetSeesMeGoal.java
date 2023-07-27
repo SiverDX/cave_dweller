@@ -23,7 +23,7 @@ public class CaveDwellerTargetSeesMeGoal extends NearestAttackableTargetGoal<Pla
             if (!Utils.isValidPlayer(target)) {
                 return false;
             } else {
-                return caveDweller.inLineOfSight(target) && caveDweller.isLookingAtMe(target);
+                return caveDweller.isLookingAtMe(target);
             }
         }
     }
