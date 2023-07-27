@@ -15,7 +15,7 @@ public class ModEntityTypes {
     public static final RegistryObject<EntityType<CaveDwellerEntity>> CAVE_DWELLER = ENTITY_TYPES.register(
             "cave_dweller",
             () -> EntityType.Builder.of(CaveDwellerEntity::new, MobCategory.MONSTER)
-                    .sized(0.4F, 1.9F) // FIXME :: Update this correctly when its crawling etc. (should be 3.0 when standing for the hitbox)
+                    .sized(0.5F, 1.9F) // FIXME :: Update this correctly when its crawling etc. (should be 3.0 when standing for the hitbox)
                     .build(new ResourceLocation(CaveDweller.MODID, "cave_dweller").toString())
     );
 
