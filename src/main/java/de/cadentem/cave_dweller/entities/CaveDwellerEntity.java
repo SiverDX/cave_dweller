@@ -48,7 +48,7 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 import java.util.List;
 import java.util.Random;
 
-public class CaveDwellerEntity extends Monster implements GeoEntity {
+public class CaveDwellerEntity extends Monster implements GeoEntity  {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
     // TODO :: 2 unused animations
@@ -176,10 +176,10 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
             BlockPos blockPosition4 = new BlockPos(posX, posY - 1, posZ);
             --runFor;
 
-            if (!level().getBlockState(blockPosition).blocksMotion()
-                    && !level().getBlockState(blockPosition2).blocksMotion()
-                    && !level().getBlockState(blockPosition3).blocksMotion()
-                    && level().getBlockState(blockPosition4).blocksMotion()) {
+            if (!level.getBlockState(blockPosition).getMaterial().blocksMotion()
+                    && !level.getBlockState(blockPosition2).getMaterial().blocksMotion()
+                    && !level.getBlockState(blockPosition3).getMaterial().blocksMotion()
+                    && level.getBlockState(blockPosition4).getMaterial().blocksMotion()) {
                 break;
             }
         }
@@ -224,9 +224,13 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
             targetSelector.tick();
         }
 
+//        if (getTarget() == null) {
+//            setTarget(level.getNearestPlayer(position().x, position().y, position().z, 128, Utils::isValidPlayer));
+//        }
+
         BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos(position().x, position().y + 2.0, position().z);
-        BlockState above = level().getBlockState(blockpos$mutableblockpos);
-        boolean blocksMotion = above.blocksMotion();
+        BlockState above = level.getBlockState(blockpos$mutableblockpos);
+        boolean blocksMotion = above.getMaterial().blocksMotion();
 
         if (blocksMotion) {
             twoBlockSpaceTimer = twoBlockSpaceCooldown;
@@ -244,20 +248,14 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
             entityData.set(SPOTTED_ACCESSOR, false);
         }
 
+        setClimbing(horizontalCollision);
+
         super.tick();
 
         entityData.set(CROUCHING_ACCESSOR, inTwoBlockSpace);
 
         if (entityData.get(SPOTTED_ACCESSOR)) {
             playSpottedSound();
-        }
-
-        if (!level().isClientSide) {
-            setClimbing(horizontalCollision);
-        }
-
-        if (getTarget() == null) {
-            setTarget(level().getNearestPlayer(position().x, position().y, position().z, 128, Utils::isValidPlayer));
         }
     }
 
@@ -314,7 +312,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
             return false;
         }
 
-        if (getTarget() != null && getTarget().getPosition(1).y > getY()) {
+        if (getTarget() != null /*&& getTarget().getPosition(1).y > getY()*/) {
             return entityData.get(CLIMBING_ACCESSOR);
         }
 
@@ -322,7 +320,9 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
     }
 
     public void setClimbing(boolean isClimbing) {
-        entityData.set(CLIMBING_ACCESSOR, isClimbing);
+        if (level instanceof ServerLevel) {
+            entityData.set(CLIMBING_ACCESSOR, isClimbing);
+        }
     }
 
     @Override
@@ -380,7 +380,6 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         return cache;
     }
 
-
     @Override
     protected void playStepSound(@NotNull BlockPos pPos, @NotNull BlockState pState) {
         super.playStepSound(pPos, pState);
@@ -392,12 +391,12 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
     }
 
     private void playEntitySound(SoundEvent soundEvent, float volume, float pitch) {
-        level().playSound(null, this, soundEvent, SoundSource.HOSTILE, volume, pitch);
+        level.playSound(null, this, soundEvent, SoundSource.HOSTILE, volume, pitch);
     }
 
     // TODO :: Is this needed? Why not just playEntitySound
     private void playBlockPosSound(final ResourceLocation soundResource, float volume, float pitch) {
-        if (level() instanceof ServerLevel serverLevel) {
+        if (level instanceof ServerLevel serverLevel) {
             int radius = 60; // blocks
             serverLevel.getPlayers(player -> player.distanceToSqr(this) <= radius * radius).forEach(player -> NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CaveSound(soundResource, player.blockPosition(), volume, pitch)));
         }
@@ -544,7 +543,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         BlockPos.MutableBlockPos validPosition = new BlockPos.MutableBlockPos(d1, d2, d3);
 
         // Don't teleport up into the air
-        while (validPosition.getY() > level().getMinBuildHeight() && !level().getBlockState(validPosition).blocksMotion()) {
+        while (validPosition.getY() > level.getMinBuildHeight() && !level.getBlockState(validPosition).getMaterial().blocksMotion()) {
             validPosition.move(Direction.DOWN);
         }
 

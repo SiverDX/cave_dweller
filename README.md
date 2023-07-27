@@ -20,6 +20,7 @@ Recommend using https://www.curseforge.com/minecraft/texture-packs/creepier-cave
 ## Bugs
 * Rails / half blocks cause problems with squeezing
 * Hitbox too small
+* Problems with 1x1 holes / towers when trying to climb
 
 ## Ideas
 * Add chance to flee when its on fire

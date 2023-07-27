@@ -2,6 +2,7 @@ package de.cadentem.cave_dweller.datagen;
 
 import de.cadentem.cave_dweller.CaveDweller;
 import net.minecraft.data.DataGenerator;
+import net.minecraft.data.tags.BiomeTagsProvider;
 import net.minecraftforge.common.data.ExistingFileHelper;
 import net.minecraftforge.data.event.GatherDataEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -14,6 +15,7 @@ public class DataGen {
         DataGenerator generator = event.getGenerator();
         ExistingFileHelper existingFileHelper = event.getExistingFileHelper();
 
-        generator.addProvider(true, new ModItemModelProvider(generator.getPackOutput(), CaveDweller.MODID, existingFileHelper));
+        generator.addProvider(event.includeClient(), new ModItemModelProvider(generator.getPackOutput(), CaveDweller.MODID, existingFileHelper));
+        generator.addProvider(event.includeServer(), new ModBiomeTagsProvider(generator.getPackOutput(), CaveDweller.MODID, existingFileHelper));
     }
 }

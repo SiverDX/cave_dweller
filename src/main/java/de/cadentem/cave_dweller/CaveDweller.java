@@ -3,6 +3,7 @@ package de.cadentem.cave_dweller;
 import com.mojang.logging.LogUtils;
 import de.cadentem.cave_dweller.client.CaveDwellerRenderer;
 import de.cadentem.cave_dweller.config.ServerConfig;
+import de.cadentem.cave_dweller.datagen.ModBiomeTagsProvider;
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
 import de.cadentem.cave_dweller.network.CaveSound;
 import de.cadentem.cave_dweller.network.NetworkHandler;
@@ -11,6 +12,7 @@ import de.cadentem.cave_dweller.registry.ModItems;
 import de.cadentem.cave_dweller.registry.ModSounds;
 import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.client.renderer.entity.EntityRenderers;
+import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -19,6 +21,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.lighting.LayerLightEventListener;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
@@ -123,7 +126,7 @@ public class CaveDweller {
 
         boolean canSpawn = calmTimer <= 0;
 
-        --calmTimer; // FIXME :: Maybe don't let this go too high (if server is running empty e.g.)
+        --calmTimer; // FIXME :: Maybe don't let this go too low (if server is running empty e.g.)
         if (canSpawn && !dwellerExists.get()) {
             if (random.nextDouble() <= ServerConfig.SPAWN_CHANCE_PER_TICK.get()) {
                 spelunkers.clear();
@@ -182,32 +185,62 @@ public class CaveDweller {
             return false;
         }
 
-        Level serverLevel = player.level();
+        ServerLevel serverLevel = player.getLevel();
 
         // Sky light level check
         // Referenced from DaylightDetectorBlock
-        int skyLightLevel = serverLevel.getBrightness(LightLayer.SKY, player.blockPosition()) - serverLevel.getSkyDarken();
+        int baseSkyLightLevel = serverLevel.getBrightness(LightLayer.SKY, player.blockPosition()) - serverLevel.getSkyDarken();
+        int actualSkyLightLevel = baseSkyLightLevel;
         float sunAngle = serverLevel.getSunAngle(1.0F);
-        if (skyLightLevel > 0) {
+
+        if (actualSkyLightLevel > 0) {
             float f1 = sunAngle < (float) Math.PI ? 0.0F : ((float) Math.PI * 2F);
             sunAngle += (f1 - sunAngle) * 0.2F;
-            skyLightLevel = Math.round((float) skyLightLevel * Mth.cos(sunAngle));
+            actualSkyLightLevel = Math.round((float) actualSkyLightLevel * Mth.cos(sunAngle));
         }
 
-        skyLightLevel = Mth.clamp(skyLightLevel, 0, 15);
+        actualSkyLightLevel = Mth.clamp(actualSkyLightLevel, 0, 15);
 
-        if (skyLightLevel > ServerConfig.SKY_LIGHT_LEVEL.get()) {
+        if (actualSkyLightLevel > ServerConfig.SKY_LIGHT_LEVEL.get()) {
             return false;
         }
 
         // Block light level check
-        LayerLightEventListener blockLighting = serverLevel.getLightEngine().getLayerListener(LightLayer.BLOCK);
+        LayerLightEventListener blockLighting = player.getLevel().getLightEngine().getLayerListener(LightLayer.BLOCK);
 
         if (blockLighting.getLightValue(player.blockPosition()) > ServerConfig.BLOCK_LIGHT_LEVEL.get()) {
             return false;
         }
 
-        return (ServerConfig.ALLOW_SURFACE_SPAWN.get() || !serverLevel.canSeeSky(player.blockPosition()));
+        // canSeeSky returns false when you stand below trees etc.
+        // FIXME :: Also unreliable, might need to check for biomes instead
+        boolean isOnSurface = baseSkyLightLevel > 0;
+
+        if (!ServerConfig.ALLOW_SURFACE_SPAWN.get() && isOnSurface) {
+            return false;
+        }
+
+        // Check biome
+        Holder<Biome> biome = serverLevel.getBiome(player.blockPosition());
+        /*
+        ResourceLocation biomeResource = ForgeRegistries.BIOMES.getKey(biome.get());
+
+        if (biomeResource == null) {
+            LOG.warn("Biome [" + biome.get() + "] could not be determined while checking if the cave dweller can spawn");
+            return false;
+        }
+
+        boolean isBiomeInList = ServerConfig.SURFACE_BIOME.get().contains(biomeResource.toString());
+        */
+
+        boolean isWhitelist = ServerConfig.SURFACE_BIOMES_IS_WHITELIST.get();
+        boolean isBiomeInList = biome.is(ModBiomeTagsProvider.CAVE_DWELLER_SURFACE_BIOMES);
+
+        if (isOnSurface && (/* Whitelist */ !isBiomeInList && isWhitelist || /* Blacklist */ isBiomeInList && !isWhitelist)) {
+            return false;
+        }
+
+        return true;
     }
 
     private void resetCalmTimer() {
