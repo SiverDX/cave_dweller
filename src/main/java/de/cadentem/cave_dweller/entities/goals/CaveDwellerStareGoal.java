@@ -53,20 +53,18 @@ public class CaveDwellerStareGoal extends Goal {
     public void tick() {
         LivingEntity target = caveDweller.getTarget();
 
-        boolean isNotLooking = caveDweller.isTargetNotLooking();
-
-        if (wasNotLookingPreviously && !isNotLooking) {
+        if (wasNotLookingPreviously && !caveDweller.targetIsLookingAtMe) {
             lookedAtCount++;
         }
 
         // TODO :: Add configs?
-        if (lookedAtCount > 10 && isNotLooking && caveDweller.getRandom().nextDouble() < 0.1) {
+        if (lookedAtCount > 10 && caveDweller.targetIsLookingAtMe && caveDweller.getRandom().nextDouble() < 0.1) {
             caveDweller.disappear();
         }
 
         if (target != null) {
             // Move towards the player when they are not looking
-            if (isNotLooking) {
+            if (caveDweller.targetIsLookingAtMe) {
                 caveDweller.pleaseStopMoving = false;
                 caveDweller.getNavigation().moveTo(target, 1);
             } else {
@@ -78,6 +76,6 @@ public class CaveDwellerStareGoal extends Goal {
             caveDweller.getLookControl().setLookAt(target);
         }
 
-        wasNotLookingPreviously = isNotLooking;
+        wasNotLookingPreviously = caveDweller.targetIsLookingAtMe;
     }
 }
