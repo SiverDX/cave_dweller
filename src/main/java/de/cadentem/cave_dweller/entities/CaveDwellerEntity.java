@@ -80,6 +80,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     public boolean spottedByPlayer;
     public boolean squeezeCrawling; // FIXME :: This is basically just `squeezing` from the chase goal
     public boolean pleaseStopMoving;
+    public boolean targetIsLookingAtMe;
 
     private float twoBlockSpaceTimer;
     private int ticksTillRemove;
@@ -229,6 +230,10 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
 //            setTarget(level.getNearestPlayer(position().x, position().y, position().z, 128, Utils::isValidPlayer));
 //        }
 
+        if (getTarget() != null) {
+            targetIsLookingAtMe = isLookingAtMe(getTarget());
+        }
+
         BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos(position().x, position().y + 2.0, position().z);
         BlockState above = level.getBlockState(blockpos$mutableblockpos);
         boolean blocksMotion = above.getMaterial().blocksMotion();
@@ -263,7 +268,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     @Override
     public @NotNull EntityDimensions getDimensions(@NotNull final Pose pose) {
         // TODO
-        return fakeSize ? new EntityDimensions(0.4F, 0.9F, true) : new EntityDimensions(0.4F, 1.9F, true);
+        return fakeSize ? new EntityDimensions(0.5F, 0.9F, true) : new EntityDimensions(0.5F, 1.9F, true);
     }
 
     private boolean isMoving() {
@@ -289,8 +294,8 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         fakeSize = true;
         refreshDimensions();
         Path shortPath = getNavigation().createPath(target, 0);
-        fakeSize = false;
-        refreshDimensions();
+//        fakeSize = false;
+//        refreshDimensions();
         return shortPath;
     }
 
@@ -313,6 +318,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             return false;
         }
 
+        // FIXME
         if (getTarget() != null /*&& getTarget().getPosition(1).y > getY()*/) {
             return entityData.get(CLIMBING_ACCESSOR);
         }
@@ -495,39 +501,26 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         }
     }
 
-    public boolean isLookingAtMe(final Entity entity) {
-        if (!(entity instanceof Player player)) {
+    public boolean isLookingAtMe(final Entity target) {
+        if (!Utils.isValidPlayer(target)) {
             return false;
         }
 
-        if (player.isSpectator() || !player.isAlive()) {
+        if (target.getEyePosition(1).distanceTo(getPosition(1)) > ServerConfig.SPOTTING_RANGE.get()) {
             return false;
         }
 
-        if (player.getEyePosition(1).distanceTo(getPosition(1)) > ServerConfig.SPOTTING_RANGE.get()) {
-            return false;
-        }
-
-        return isLooking(player);
+        return isLooking(target);
     }
 
-    public boolean isTargetNotLooking() {
-        LivingEntity target = getTarget();
-
-        if (target == null) {
-            return false;
-        }
-
-        return !isLooking(target);
-    }
-
-    private boolean isLooking(final LivingEntity target) {
+    private boolean isLooking(final Entity target) {
         Vec3 viewVector = target.getViewVector(1.0F).normalize();
         Vec3 difference = new Vec3(getX() - target.getX(), getEyeY() - target.getEyeY(), getZ() - target.getZ());
         difference = difference.normalize();
         double dot = viewVector.dot(difference);
 
-        return dot > 0 && target.hasLineOfSight(this);
+        // FIXME :: The line of sight method is very unreliable
+        return dot > 0 /*&& target.hasLineOfSight(this)*/;
     }
 
     // TODO :: Unused
