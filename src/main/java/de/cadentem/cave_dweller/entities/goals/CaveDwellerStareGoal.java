@@ -45,6 +45,7 @@ public class CaveDwellerStareGoal extends Goal {
         super.stop();
         lookedAtCount = 0;
         wasNotLookingPreviously = false;
+        caveDweller.pleaseStopMoving = false;
         caveDweller.getEntityData().set(CaveDwellerEntity.SPOTTED_ACCESSOR, false);
     }
 

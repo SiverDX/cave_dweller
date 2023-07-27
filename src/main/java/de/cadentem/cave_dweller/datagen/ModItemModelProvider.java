@@ -10,6 +10,7 @@ public class ModItemModelProvider extends ItemModelProvider {
         super(generator, modId, existingFileHelper);
     }
 
+    @Override
     protected void registerModels() {
         withExistingParent(ModItems.CAVE_DWELLER_SPAWN_EGG.getId().getPath(), mcLoc("item/template_spawn_egg"));
     }
