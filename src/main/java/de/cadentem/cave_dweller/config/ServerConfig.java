@@ -2,10 +2,13 @@ package de.cadentem.cave_dweller.config;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 
+import java.util.List;
+
 public class ServerConfig {
     public static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
     public static final ForgeConfigSpec SPEC;
 
+    // Timers
     public static ForgeConfigSpec.ConfigValue<Integer> CAN_SPAWN_MIN;
     public static ForgeConfigSpec.ConfigValue<Integer> CAN_SPAWN_MAX;
     public static ForgeConfigSpec.ConfigValue<Integer> CAN_SPAWN_COOLDOWN;
@@ -15,12 +18,17 @@ public class ServerConfig {
     public static ForgeConfigSpec.ConfigValue<Integer> TIME_UNTIL_LEAVE;
     public static ForgeConfigSpec.ConfigValue<Integer> TIME_UNTIL_LEAVE_CHASE;
 
+    // Spawn Conditions
     public static ForgeConfigSpec.ConfigValue<Double> SPAWN_CHANCE_PER_TICK;
     public static ForgeConfigSpec.ConfigValue<Integer> SPAWN_HEIGHT;
     public static ForgeConfigSpec.ConfigValue<Boolean> ALLOW_SURFACE_SPAWN;
     public static ForgeConfigSpec.ConfigValue<Integer> SKY_LIGHT_LEVEL;
     public static ForgeConfigSpec.ConfigValue<Integer> BLOCK_LIGHT_LEVEL;
+    public static ForgeConfigSpec.ConfigValue<List<String>> DIMENSION_WHITELIST;
+    public static ForgeConfigSpec.BooleanValue SURFACE_BIOMES_IS_WHITELIST;
+    public static ForgeConfigSpec.ConfigValue<List<String>> SURFACE_BIOMES;
 
+    // Behaviour
     public static ForgeConfigSpec.ConfigValue<Integer> SPOTTING_RANGE;
     public static ForgeConfigSpec.ConfigValue<Boolean> CAN_CLIMB;
     public static ForgeConfigSpec.ConfigValue<Boolean> CAN_BREAK_DOOR;
@@ -28,6 +36,7 @@ public class ServerConfig {
     public static ForgeConfigSpec.ConfigValue<Boolean> ALLOW_RIDING;
     public static ForgeConfigSpec.ConfigValue<Boolean> TARGET_INVISIBLE;
 
+    // Attributes
     public static ForgeConfigSpec.ConfigValue<Double> MAX_HEALTH;
     public static ForgeConfigSpec.ConfigValue<Double> ATTACK_DAMAGE;
     public static ForgeConfigSpec.ConfigValue<Double> ATTACK_SPEED;
@@ -36,7 +45,6 @@ public class ServerConfig {
 
     static {
         BUILDER.push("Timers");
-        BUILDER.comment("Influence the time it takes for a cave dweller to spawn");
         CAN_SPAWN_MIN = BUILDER.comment("Minimum time between spawns in seconds").defineInRange("can_spawn_min", 300, 0, 60 * 60 * 24);
         CAN_SPAWN_MAX = BUILDER.comment("Maximum time between spawns in seconds").defineInRange("can_spawn_max", 600, 0, 60 * 60 * 24);
         CAN_SPAWN_COOLDOWN_CHANCE = BUILDER.comment("Chance for a spawn cooldown to occur").defineInRange("can_spawn_cooldown_chance", 0.4, 0, 1);
@@ -53,6 +61,16 @@ public class ServerConfig {
         ALLOW_SURFACE_SPAWN = BUILDER.comment("Whether the Cave Dweller can spawn on the surface or not").define("allow_surface_spawn", false);
         SKY_LIGHT_LEVEL = BUILDER.comment("The maximum sky light level the Cave Dweller can spawn at").defineInRange("sky_light_level", 8, 0, 15);
         BLOCK_LIGHT_LEVEL = BUILDER.comment("The maximum block light level the Cave Dweller can spawn at").defineInRange("block_light_level", 15, 0, 15);
+        SURFACE_BIOMES_IS_WHITELIST = BUILDER.comment("Use the surface biome list either as white- or blacklist").define("surface_biomes_is_whitelist", true);
+        /*
+        SURFACE_BIOMES = BUILDER.comment("Either white- or blacklist of the surface biomes the Cave Dweller can spawn in (Syntax: modid:biome, e.g. `minecraft:plains`)").define("surface_biomes", List.of(), element -> {
+            if (element instanceof String string) {
+                return string.split(":").length == 2;
+            }
+
+            return false;
+        });
+        */
         BUILDER.pop();
 
         BUILDER.push("Behaviour");
