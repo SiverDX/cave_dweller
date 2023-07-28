@@ -55,35 +55,27 @@ public class CaveDwellerChaseGoal extends Goal {
             return false;
         }
 
-        Path path;
-
-        if (canPenalize) { // TODO :: This is currently always false
-            if (--ticksUntilNextPathRecalculation <= 0) {
-                path = caveDweller.getNavigation().createPath(target, 0);
-                ticksUntilNextPathRecalculation = 2;
-
-                return path != null;
-            } else {
-                return true;
-            }
-        }
-
-        path = caveDweller.getNavigation().createPath(target, 0);
+        Path path = caveDweller.getNavigation().createPath(target, 0);
 
         if (path != null) {
             return true;
         }
 
         // Check if the Cave Dweller can already reach the target
-        boolean canAttack = getAttackReachSqr(target) >= caveDweller.distanceToSqr(target.getX(), target.getY(), target.getZ());
+        boolean canAttack = getAttackReachSqr(target) >= caveDweller.distanceToSqr(target);
 
-        if (!canAttack) {
-            path = caveDweller.createShortPath(target);
-
-            return path != null;
+        if (canAttack) {
+            return true;
         }
 
-        return false;
+        // Try path with smaller size
+        caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, true);
+        caveDweller.refreshDimensions();
+        caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, false);
+
+        path = caveDweller.getNavigation().createPath(target, 0);
+
+        return path != null;
     }
 
     @Override
@@ -118,7 +110,6 @@ public class CaveDwellerChaseGoal extends Goal {
             caveDweller.setTarget(null);
         }
 
-        caveDweller.isSqueezing = false;
         caveDweller.refreshDimensions();
         caveDweller.getNavigation().stop();
     }
@@ -131,7 +122,7 @@ public class CaveDwellerChaseGoal extends Goal {
     @Override
     public void tick() {
         // FIXME :: fix climbing
-        // TODO :: Move slow for 1-2 seconds then run
+        // TODO :: Move slow for 1-2 seconds then run (set a time to which it speeds up to until it reaches speed modifier of 1?)
         if (ticksUntilLeave <= 0 && !caveDweller.targetIsLookingAtMe) {
             caveDweller.disappear();
         }
@@ -144,13 +135,16 @@ public class CaveDwellerChaseGoal extends Goal {
 
         Path path = caveDweller.getNavigation().getPath();
 
-        if (path == null || path.isDone()) {
+        if (path == null || path.isDone() || path.getEndNode() == null || path.getEndNode().distanceToSqr(target.blockPosition())  > 0.5) {
             path = caveDweller.getNavigation().createPath(target, 0);
         }
 
+        boolean isSqueezing = false;
+
         // No path could be found, try with smaller size
         if (path == null || path.isDone()) {
-            caveDweller.isSqueezing = true;
+            isSqueezing = true;
+            caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, isSqueezing);
             caveDweller.refreshDimensions();
             path = caveDweller.getNavigation().createPath(target, 0);
         }
@@ -161,14 +155,23 @@ public class CaveDwellerChaseGoal extends Goal {
             boolean isAboveSolid = caveDweller.level.getBlockState(caveDweller.blockPosition().above()).getMaterial().isSolid();
             boolean isNextAboveSolid = caveDweller.level.getBlockState(path.getNextNodePos().above()).getMaterial().isSolid();
 
-            caveDweller.isSqueezing = isAboveSolid || isNextAboveSolid;
-            caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, caveDweller.isSqueezing);
+            /* The next path point does not have a solid block above it but the cave dweller is crouching:
+             xxxx   x = blocks | o = cave dweller
+              o x
+            x o x
+            xxxxx
+            */
+            boolean extraCheck = caveDweller.getEntityData().get(CaveDwellerEntity.CROUCHING_ACCESSOR);
+            extraCheck = extraCheck && path.getNextNodePos().getY() > caveDweller.blockPosition().getY();
+
+            isSqueezing = isAboveSolid || isNextAboveSolid || extraCheck;
+            caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, isSqueezing);
             caveDweller.refreshDimensions();
         }
 
-        caveDweller.getNavigation().moveTo(path, caveDweller.isSqueezing ? 0.3 : 1);
+        caveDweller.getNavigation().moveTo(path, isSqueezing ? 0.3 : 1);
 
-        if (!caveDweller.isSqueezing) {
+        if (!isSqueezing) {
             if (caveDweller.isAggressive()) {
                 caveDweller.getLookControl().setLookAt(target, 90.0F, 90.0F);
             } else {

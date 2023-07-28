@@ -62,6 +62,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     private final RawAnimation CALM_STILL = new RawAnimation("animation.cave_dweller.calm_idle", ILoopType.EDefaultLoopTypes.LOOP);
     private final RawAnimation IS_SPOTTED = new RawAnimation("animation.cave_dweller.spotted", ILoopType.EDefaultLoopTypes.HOLD_ON_LAST_FRAME);
     private final RawAnimation CRAWL = new RawAnimation("animation.cave_dweller.crawl", ILoopType.EDefaultLoopTypes.LOOP);
+    private final RawAnimation CRAWL_END = new RawAnimation("animation.cave_dweller.crawl_end", ILoopType.EDefaultLoopTypes.HOLD_ON_LAST_FRAME);
     private final RawAnimation FLEE = new RawAnimation("animation.cave_dweller.flee", ILoopType.EDefaultLoopTypes.LOOP);
 
     public static final EntityDataAccessor<Boolean> FLEEING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
@@ -73,7 +74,6 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     private final float twoBlockSpaceCooldown;
 
     public Roll currentRoll = Roll.STROLL;
-    public boolean isSqueezing;
     public boolean isFleeing;
     public boolean pleaseStopMoving;
     public boolean targetIsLookingAtMe;
@@ -221,6 +221,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             targetSelector.tick();
         }
 
+        // The calls in the goal seem to only update the server side, this updates the rendered hitbox e.g.
         refreshDimensions();
 
         if (getTarget() != null) {
@@ -286,15 +287,6 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         currentRoll = rolls.get(new Random().nextInt(rolls.size()));
     }
 
-    public Path createShortPath(final LivingEntity target) {
-        isSqueezing = true;
-        refreshDimensions();
-        Path shortPath = getNavigation().createPath(target, 0);
-        isSqueezing = false;
-        refreshDimensions();
-        return shortPath;
-    }
-
     @Override
     public boolean onClimbable() {
         return isClimbing();
@@ -322,14 +314,20 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         return new WallClimberNavigation(this, level);
     }
 
+    private int crawlingTicks;
+
     private PlayState predicate(final AnimationEvent<CaveDwellerEntity> event) {
         AnimationBuilder builder = new AnimationBuilder();
         AnimationController<CaveDwellerEntity> controller = event.getController();
 
         if (isAggressive()) {
             if (entityData.get(CRAWLING_ACCESSOR)) {
+                crawlingTicks = Utils.secondsToTicks(1);
                 // Squeezing
                 builder.addAnimation(CRAWL.animationName, CRAWL.loopType);
+            } else if (crawlingTicks > 0) {
+                crawlingTicks--;
+                builder.addAnimation(CRAWL_END.animationName, CRAWL_END.loopType);
             } else if (entityData.get(CROUCHING_ACCESSOR)) {
                 // Crouching
                 if (event.isMoving()) {
