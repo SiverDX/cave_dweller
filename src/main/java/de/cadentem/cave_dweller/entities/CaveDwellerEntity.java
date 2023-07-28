@@ -319,7 +319,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         if (isAggressive()) {
             if (entityData.get(CRAWLING_ACCESSOR)) {
                 crawlingTicks = Utils.secondsToTicks(1);
-                // Squeezing
+                // Crawling
                 builder.addAnimation(CRAWL.animationName, CRAWL.loopType);
             } else if (crawlingTicks > 0) {
                 crawlingTicks--;
