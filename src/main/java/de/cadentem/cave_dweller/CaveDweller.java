@@ -169,7 +169,6 @@ public class CaveDweller {
             return false;
         }
 
-        // TODO :: Play the same sound to all players?
         ResourceLocation soundLocation = switch (random.nextInt(4)) {
             case 1 -> ModSounds.CAVENOISE_2.get().getLocation();
             case 2 -> ModSounds.CAVENOISE_3.get().getLocation();

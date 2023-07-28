@@ -12,17 +12,20 @@ import java.util.EnumSet;
 
 public class CaveDwellerChaseGoal extends Goal {
     private final CaveDwellerEntity caveDweller;
+    private final int maxSpeedReached;
     private final boolean followTargetEvenIfNotSeen;
 
     private long lastGameTimeCheck;
     private int ticksUntilLeave;
     private int ticksUntilNextAttack;
+    private int speedUp;
 
     public CaveDwellerChaseGoal(final CaveDwellerEntity caveDweller, boolean followTargetEvenIfNotSeen) {
         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
         this.caveDweller = caveDweller;
         this.followTargetEvenIfNotSeen = followTargetEvenIfNotSeen;
         this.ticksUntilLeave = Utils.secondsToTicks(ServerConfig.TIME_UNTIL_LEAVE_CHASE.get());
+        this.maxSpeedReached = Utils.secondsToTicks(3);
     }
 
     @Override
@@ -39,7 +42,6 @@ public class CaveDwellerChaseGoal extends Goal {
             return false;
         }
 
-        // TODO :: Not entirely sure why this is here, performance?
         long ticks = caveDweller.level.getGameTime();
 
         if (ticks - lastGameTimeCheck < 20) {
@@ -109,6 +111,8 @@ public class CaveDwellerChaseGoal extends Goal {
 
         caveDweller.refreshDimensions();
         caveDweller.getNavigation().stop();
+
+        speedUp = 0;
     }
 
     @Override
@@ -118,8 +122,6 @@ public class CaveDwellerChaseGoal extends Goal {
 
     @Override
     public void tick() {
-        // FIXME :: fix climbing
-        // TODO :: Move slow for 1-2 seconds then run (set a time to which it speeds up to until it reaches speed modifier of 1?)
         if (ticksUntilLeave <= 0 && !caveDweller.targetIsLookingAtMe) {
             caveDweller.disappear();
         }
@@ -137,8 +139,11 @@ public class CaveDwellerChaseGoal extends Goal {
         }
 
         boolean isSqueezing = false;
+        // TODO :: Could check if the blocks around the dweller are all solid (height of 2)?
+        boolean shouldClimb = target.getY() > caveDweller.getY() /*|| (path != null && path.getNodeCount() == 1)*/;
 
-        if (path == null || path.isDone()) {
+        // When the node count is 1 it usually means that no actual path can be found (and the node point is just the target location)
+        if (!shouldClimb && (path == null || path.isDone() || path.getNodeCount() == 1)) {
             // No path could be found, try with smaller size
             isSqueezing = true;
             caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, true);
@@ -168,7 +173,8 @@ public class CaveDwellerChaseGoal extends Goal {
             caveDweller.refreshDimensions();
         }
 
-        caveDweller.getNavigation().moveTo(path, isSqueezing ? 0.3 : 1);
+        double speedModifier = (0.85 / maxSpeedReached) * speedUp;
+        caveDweller.getNavigation().moveTo(path, isSqueezing ? 0.3 : speedModifier);
 
         if (!isSqueezing) {
             if (caveDweller.isAggressive()) {
@@ -183,6 +189,10 @@ public class CaveDwellerChaseGoal extends Goal {
         checkAndPerformAttack(target, distance);
 
         ticksUntilLeave--;
+
+        if (speedUp < maxSpeedReached) {
+            speedUp++;
+        }
     }
 
     private void checkAndPerformAttack(final LivingEntity target, double distanceToTarget) {
