@@ -1,7 +1,7 @@
 {
   "values": [
     {
-      "id": "forge:is_spooky",
+      "id": "#forge:is_spooky",
       "required": false
     }
   ]
