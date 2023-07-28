@@ -57,7 +57,8 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
     private final RawAnimation CALM_RUN = RawAnimation.begin().then("animation.cave_dweller.calm_move", LoopType.LOOP);
     private final RawAnimation CALM_STILL = RawAnimation.begin().then("animation.cave_dweller.calm_idle", LoopType.LOOP);
     private final RawAnimation IS_SPOTTED = RawAnimation.begin().then("animation.cave_dweller.spotted", LoopType.HOLD_ON_LAST_FRAME);
-    private final RawAnimation CRAWL = RawAnimation.begin().then("animation.cave_dweller.crawl", LoopType.HOLD_ON_LAST_FRAME);
+    private final RawAnimation CRAWL = RawAnimation.begin().then("animation.cave_dweller.crawl", LoopType.LOOP);
+    private final RawAnimation CRAWL_END = RawAnimation.begin().then("animation.cave_dweller.crawl_end", LoopType.HOLD_ON_LAST_FRAME);
     private final RawAnimation FLEE = RawAnimation.begin().then("animation.cave_dweller.flee", LoopType.LOOP);
 
     public static final EntityDataAccessor<Boolean> FLEEING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
@@ -69,7 +70,6 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
     private final float twoBlockSpaceCooldown;
 
     public Roll currentRoll = Roll.STROLL;
-    public boolean isSqueezing;
     public boolean isFleeing;
     public boolean pleaseStopMoving;
     public boolean targetIsLookingAtMe;
@@ -217,6 +217,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
             targetSelector.tick();
         }
 
+        // The calls in the goal seem to only update the server side, this updates the rendered hitbox e.g.
         refreshDimensions();
 
         if (getTarget() != null) {
@@ -282,15 +283,6 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
         currentRoll = rolls.get(new Random().nextInt(rolls.size()));
     }
 
-    public Path createShortPath(final LivingEntity target) {
-        isSqueezing = true;
-        refreshDimensions();
-        Path shortPath = getNavigation().createPath(target, 0);
-        isSqueezing = false;
-        refreshDimensions();
-        return shortPath;
-    }
-
     @Override
     public boolean onClimbable() {
         return isClimbing();
@@ -318,11 +310,17 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
         return new WallClimberNavigation(this, level);
     }
 
+    private int crawlingTicks;
+
     private PlayState predicate(final AnimationState<CaveDwellerEntity> state) {
         if (isAggressive()) {
             if (entityData.get(CRAWLING_ACCESSOR)) {
+                crawlingTicks = Utils.secondsToTicks(1);
                 // Squeezing
                 return state.setAndContinue(CRAWL);
+            } else if (crawlingTicks > 0) {
+                crawlingTicks--;
+                return state.setAndContinue(CRAWL_END);
             } else if (entityData.get(CROUCHING_ACCESSOR)) {
                 // Crouching
                 if (state.isMoving()) {

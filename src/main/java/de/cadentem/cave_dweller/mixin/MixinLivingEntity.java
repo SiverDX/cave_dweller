@@ -7,7 +7,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
@@ -16,8 +15,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LivingEntity.class)
 public abstract class MixinLivingEntity {
-    @Shadow public abstract boolean canAttack(LivingEntity pTarget);
-
     /** Give the Cave Dweller the depth strider effect */
     @ModifyVariable(method = "travel", at = @At("STORE"), name = "f6")
     public float fakeDepthStrider(float depthStriderBonus) {
@@ -48,7 +45,7 @@ public abstract class MixinLivingEntity {
         LivingEntity livingEntity = (LivingEntity) (Object) this;
 
         if (livingEntity instanceof CaveDwellerEntity caveDweller) {
-            if (caveDweller.isSqueezing) {
+            if (caveDweller.getEntityData().get(CaveDwellerEntity.CRAWLING_ACCESSOR)) {
                 callback.setReturnValue(0.3F);
             }
         }
