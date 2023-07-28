@@ -138,8 +138,8 @@ public class CaveDwellerChaseGoal extends Goal {
 
         boolean isSqueezing = false;
 
-        // No path could be found, try with smaller size
         if (path == null || path.isDone()) {
+            // No path could be found, try with smaller size
             isSqueezing = true;
             caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, true);
             caveDweller.refreshDimensions();
@@ -147,7 +147,9 @@ public class CaveDwellerChaseGoal extends Goal {
         }
 
         if (path != null && !path.isDone()) {
-            caveDweller.playChaseSound();
+            if (caveDweller.hasLineOfSight(target)) {
+                caveDweller.playChaseSound();
+            }
 
             boolean isAboveSolid = caveDweller.level.getBlockState(caveDweller.blockPosition().above()).getMaterial().isSolid();
             boolean isNextAboveSolid = caveDweller.level.getBlockState(path.getNextNodePos().above()).getMaterial().isSolid();
