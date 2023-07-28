@@ -67,7 +67,6 @@ public class CaveDwellerStareGoal extends Goal {
             lookedAtCount++;
         }
 
-        // TODO :: Add configs?
         if (lookedAtCount > 10 && actuallyLooking && caveDweller.getRandom().nextDouble() < 0.1) {
             caveDweller.disappear();
         }
