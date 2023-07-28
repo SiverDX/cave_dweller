@@ -25,7 +25,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.navigation.WallClimberNavigation;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
@@ -51,9 +50,6 @@ import java.util.Random;
 public class CaveDwellerEntity extends Monster implements GeoEntity  {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
-    // TODO :: 2 unused animations
-    private final RawAnimation OLD_RUN = RawAnimation.begin().then("animation.cave_dweller.run", LoopType.LOOP);
-    private final RawAnimation IDLE = RawAnimation.begin().then("animation.cave_dweller.idle", LoopType.LOOP);
     private final RawAnimation CHASE = RawAnimation.begin().then("animation.cave_dweller.new_run", LoopType.LOOP);
     private final RawAnimation CHASE_IDLE = RawAnimation.begin().then("animation.cave_dweller.run_idle", LoopType.LOOP);
     private final RawAnimation CROUCH_RUN = RawAnimation.begin().then("animation.cave_dweller.crouch_run_new", LoopType.LOOP);
@@ -66,18 +62,16 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
 
     public static final EntityDataAccessor<Boolean> FLEEING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
     public static final EntityDataAccessor<Boolean> CROUCHING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
-    public static final EntityDataAccessor<Boolean> AGGRO_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
-    public static final EntityDataAccessor<Boolean> SQUEEZING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
+    public static final EntityDataAccessor<Boolean> CRAWLING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
     public static final EntityDataAccessor<Boolean> SPOTTED_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
     public static final EntityDataAccessor<Boolean> CLIMBING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
 
     private final float twoBlockSpaceCooldown;
 
     public Roll currentRoll = Roll.STROLL;
-    public boolean fakeSize;
+    public boolean isSqueezing;
     public boolean isFleeing;
     public boolean spottedByPlayer;
-    public boolean squeezeCrawling; // FIXME :: This is basically just `squeezing` from the chase goal
     public boolean pleaseStopMoving;
     public boolean targetIsLookingAtMe;
 
@@ -141,8 +135,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
         super.defineSynchedData();
         entityData.define(FLEEING_ACCESSOR, false);
         entityData.define(CROUCHING_ACCESSOR, false);
-        entityData.define(AGGRO_ACCESSOR, false);
-        entityData.define(SQUEEZING_ACCESSOR, false);
+        entityData.define(CRAWLING_ACCESSOR, false);
         entityData.define(SPOTTED_ACCESSOR, false);
         entityData.define(CLIMBING_ACCESSOR, false);
     }
@@ -225,22 +218,19 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
             targetSelector.tick();
         }
 
-//        if (getTarget() == null) {
-//            setTarget(level.getNearestPlayer(position().x, position().y, position().z, 128, Utils::isValidPlayer));
-//        }
+        refreshDimensions();
 
         if (getTarget() != null) {
             targetIsLookingAtMe = isLookingAtMe(getTarget());
         }
 
-        BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos(position().x, position().y + 2.0, position().z);
-        BlockState above = level.getBlockState(blockpos$mutableblockpos);
-        boolean blocksMotion = above.getMaterial().blocksMotion();
+        boolean shouldCrouch = level.getBlockState(blockPosition().above().above()).getMaterial().isSolid();
 
-        if (blocksMotion) {
+        if (shouldCrouch) {
             twoBlockSpaceTimer = twoBlockSpaceCooldown;
             inTwoBlockSpace = true;
         } else {
+            // Don't immediately stop crouching
             --twoBlockSpaceTimer;
 
             if (twoBlockSpaceTimer <= 0.0F) {
@@ -248,26 +238,30 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
             }
         }
 
-        if (isAggressive() || isFleeing) {
-            spottedByPlayer = false;
-            entityData.set(SPOTTED_ACCESSOR, false);
+        if (level instanceof ServerLevel) {
+            if (isAggressive() || isFleeing) {
+                entityData.set(SPOTTED_ACCESSOR, false);
+            }
+
+            setClimbing(horizontalCollision);
+            entityData.set(CROUCHING_ACCESSOR, inTwoBlockSpace);
         }
-
-        setClimbing(horizontalCollision);
-
-        super.tick();
-
-        entityData.set(CROUCHING_ACCESSOR, inTwoBlockSpace);
 
         if (entityData.get(SPOTTED_ACCESSOR)) {
             playSpottedSound();
         }
+
+        super.tick();
     }
 
     @Override
     public @NotNull EntityDimensions getDimensions(@NotNull final Pose pose) {
-        // TODO
-        return fakeSize ? new EntityDimensions(0.5F, 0.9F, true) : new EntityDimensions(0.5F, 1.9F, true);
+        if (entityData.get(CRAWLING_ACCESSOR)) {
+            return new EntityDimensions(0.5F, 0.3F, true);
+        }
+
+        // FIXME Check for crouching
+        return super.getDimensions(pose);
     }
 
     private boolean isMoving() {
@@ -290,19 +284,10 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
     }
 
     public Path createShortPath(final LivingEntity target) {
-        fakeSize = true;
+        isSqueezing = true;
         refreshDimensions();
         Path shortPath = getNavigation().createPath(target, 0);
-//        fakeSize = false;
-//        refreshDimensions();
-        return shortPath;
-    }
-
-    public Path createShortPath(@NotNull final Vec3 position) {
-        fakeSize = true;
-        refreshDimensions();
-        Path shortPath = getNavigation().createPath(position.x, position.y, position.z, 0);
-        fakeSize = false;
+        isSqueezing = false;
         refreshDimensions();
         return shortPath;
     }
@@ -326,9 +311,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
     }
 
     public void setClimbing(boolean isClimbing) {
-        if (level instanceof ServerLevel) {
-            entityData.set(CLIMBING_ACCESSOR, isClimbing);
-        }
+        entityData.set(CLIMBING_ACCESSOR, isClimbing);
     }
 
     @Override
@@ -337,8 +320,8 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
     }
 
     private PlayState predicate(final AnimationState<CaveDwellerEntity> state) {
-        if (entityData.get(AGGRO_ACCESSOR)) {
-            if (entityData.get(SQUEEZING_ACCESSOR)) {
+        if (isAggressive()) {
+            if (entityData.get(CRAWLING_ACCESSOR)) {
                 // Squeezing
                 return state.setAndContinue(CRAWL);
             } else if (entityData.get(CROUCHING_ACCESSOR)) {

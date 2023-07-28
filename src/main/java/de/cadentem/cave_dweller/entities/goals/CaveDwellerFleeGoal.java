@@ -47,7 +47,6 @@ public class CaveDwellerFleeGoal extends Goal {
     @Override
     public void start() {
         setFleePath();
-        caveDweller.spottedByPlayer = false;
         shouldLeave = false;
     }
 
@@ -83,8 +82,8 @@ public class CaveDwellerFleeGoal extends Goal {
         if (fleePosition != null) {
             fleePath = caveDweller.getNavigation().createPath(fleePosition.x, fleePosition.y, fleePosition.z, 0);
 
-            if (fleePath == null) {
-                fleePath = caveDweller.createShortPath(fleePosition);
+            if (fleePath == null) { // TODO
+//                fleePath = caveDweller.createShortPath(fleePosition);
             }
         }
     }

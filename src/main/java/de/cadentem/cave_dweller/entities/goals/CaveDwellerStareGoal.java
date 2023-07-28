@@ -53,7 +53,7 @@ public class CaveDwellerStareGoal extends Goal {
     public void tick() {
         LivingEntity target = caveDweller.getTarget();
 
-        if (wasNotLookingPreviously && !caveDweller.targetIsLookingAtMe) {
+        if (!wasNotLookingPreviously && caveDweller.targetIsLookingAtMe) {
             lookedAtCount++;
         }
 
@@ -64,7 +64,7 @@ public class CaveDwellerStareGoal extends Goal {
 
         if (target != null) {
             // Move towards the player when they are not looking
-            if (caveDweller.targetIsLookingAtMe) {
+            if (!caveDweller.targetIsLookingAtMe) {
                 caveDweller.pleaseStopMoving = false;
                 caveDweller.getNavigation().moveTo(target, 1);
             } else {
