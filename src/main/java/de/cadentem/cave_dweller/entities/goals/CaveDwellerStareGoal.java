@@ -72,7 +72,7 @@ public class CaveDwellerStareGoal extends Goal {
         if (lookedAtCount > 10 && actuallyLooking) {
             if (caveDweller.getRandom().nextDouble() < 0.1) {
                 caveDweller.disappear();
-            } else if (caveDweller.getRandom().nextDouble() < 0.1) {
+            } else if (caveDweller.getRandom().nextDouble() < 0.3) {
                 caveDweller.pickRoll(List.of(Roll.CHASE, Roll.FLEE));
             }
         }
