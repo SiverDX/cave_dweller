@@ -534,14 +534,6 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         return true;
     }
 
-    public boolean inTargetLineOfSight() {
-        return getTarget() != null && getTarget().hasLineOfSight(this);
-    }
-
-    public boolean inLineOfSight(final LivingEntity target) {
-        return target != null && target.hasLineOfSight(this);
-    }
-
     @Override
     protected SoundEvent getHurtSound(@NotNull final DamageSource damageSourceIn) {
         return chooseHurtSound();
