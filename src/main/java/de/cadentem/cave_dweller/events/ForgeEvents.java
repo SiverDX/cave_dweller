@@ -35,7 +35,7 @@ public class ForgeEvents {
                 }
 
                 event.setCanceled(true);
-            } else if (event.getSource() == DamageSource.IN_WALL || event.getSource() == DamageSource.FALL) {
+            } else if (event.getSource() == /* TODO :: Add to teleport? */ DamageSource.IN_WALL || event.getSource() == DamageSource.FALL) {
                 event.setCanceled(true);
             }
         }

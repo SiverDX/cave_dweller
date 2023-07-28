@@ -256,10 +256,11 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
     @Override
     public @NotNull EntityDimensions getDimensions(@NotNull final Pose pose) {
         if (entityData.get(CRAWLING_ACCESSOR)) {
-            return new EntityDimensions(0.5F, 0.3F, true);
+            return new EntityDimensions(0.5F, 0.5F, true);
+        } else if (entityData.get(CROUCHING_ACCESSOR)) {
+            return new EntityDimensions(0.5F, 2.0F, true);
         }
 
-        // FIXME Check for crouching
         return super.getDimensions(pose);
     }
 
@@ -271,7 +272,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
     }
 
     public void reRoll() {
-        /* TODO
+        /*
         Rolling STROLL (3) here causes it to just stand in place and play the stare animation
         (And playing the stare animation when it stops moving)
         */
@@ -292,7 +293,6 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
             return false;
         }
 
-        // FIXME
         if (getTarget() != null /*&& getTarget().getPosition(1).y > getY()*/) {
             return entityData.get(CLIMBING_ACCESSOR);
         }
@@ -495,7 +495,6 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
         return dot > 0 /*&& target.hasLineOfSight(this)*/;
     }
 
-    // TODO :: Unused
     public boolean teleportToTarget() {
         LivingEntity target = getTarget();
 
