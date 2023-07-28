@@ -3,6 +3,7 @@ package de.cadentem.cave_dweller.events;
 import de.cadentem.cave_dweller.CaveDweller;
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -16,7 +17,7 @@ public class ForgeEvents {
 
     @SubscribeEvent
     public static void handleHurt(final LivingAttackEvent event) {
-        LivingEntity entity = event.getEntity();
+        Entity entity = event.getEntity();
 
         if (entity instanceof CaveDwellerEntity caveDweller) {
             // TODO :: Also do it for OUT_OF_WORLD?
