@@ -1,6 +1,7 @@
 package de.cadentem.cave_dweller.entities.goals;
 
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
+import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.phys.Vec3;
@@ -19,20 +20,22 @@ public class CaveDwellerStareGoal extends Goal {
     public boolean canUse() {
         if (caveDweller.isInvisible()) {
             return false;
-        } else if (caveDweller.getTarget() == null) {
-            return false;
-        } else {
-            return caveDweller.currentRoll == Roll.STARE;
         }
+
+        if (!Utils.isValidPlayer(caveDweller.getTarget())) {
+            return false;
+        }
+
+        return caveDweller.currentRoll == Roll.STARE;
     }
 
     @Override
     public boolean canContinueToUse() {
-        if (caveDweller.getTarget() == null) {
+        if (!Utils.isValidPlayer(caveDweller.getTarget())) {
             return false;
-        } else {
-            return caveDweller.currentRoll == Roll.STARE;
         }
+
+        return caveDweller.currentRoll == Roll.STARE;
     }
 
     @Override
@@ -53,29 +56,34 @@ public class CaveDwellerStareGoal extends Goal {
     public void tick() {
         LivingEntity target = caveDweller.getTarget();
 
-        if (!wasNotLookingPreviously && caveDweller.targetIsLookingAtMe) {
+        if (target == null) {
+            caveDweller.disappear();
+            return;
+        }
+
+        boolean actuallyLooking = caveDweller.targetIsLookingAtMe && target.hasLineOfSight(caveDweller);
+
+        if (!wasNotLookingPreviously && actuallyLooking) {
             lookedAtCount++;
         }
 
         // TODO :: Add configs?
-        if (lookedAtCount > 10 && caveDweller.targetIsLookingAtMe && caveDweller.getRandom().nextDouble() < 0.1) {
+        if (lookedAtCount > 10 && actuallyLooking && caveDweller.getRandom().nextDouble() < 0.1) {
             caveDweller.disappear();
         }
 
-        if (target != null) {
-            // Move towards the player when they are not looking
-            if (!caveDweller.targetIsLookingAtMe) {
-                caveDweller.pleaseStopMoving = false;
-                caveDweller.getNavigation().moveTo(target, 1);
-            } else {
-                caveDweller.pleaseStopMoving = true;
-                caveDweller.getNavigation().stop();
-                caveDweller.setDeltaMovement(Vec3.ZERO);
-            }
-
-            caveDweller.getLookControl().setLookAt(target);
+        // Move towards the player when they are not looking
+        if (!actuallyLooking) {
+            caveDweller.pleaseStopMoving = false;
+            caveDweller.getNavigation().moveTo(target, 1);
+        } else {
+            caveDweller.pleaseStopMoving = true;
+            caveDweller.getNavigation().stop();
+            caveDweller.setDeltaMovement(Vec3.ZERO);
         }
 
-        wasNotLookingPreviously = caveDweller.targetIsLookingAtMe;
+        caveDweller.getLookControl().setLookAt(target);
+
+        wasNotLookingPreviously = actuallyLooking;
     }
 }
