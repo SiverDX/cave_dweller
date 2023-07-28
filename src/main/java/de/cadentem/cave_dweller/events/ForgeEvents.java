@@ -2,7 +2,7 @@ package de.cadentem.cave_dweller.events;
 
 import de.cadentem.cave_dweller.CaveDweller;
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
-import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -20,7 +20,7 @@ public class ForgeEvents {
 
         if (entity instanceof CaveDwellerEntity caveDweller) {
             // TODO :: Also do it for OUT_OF_WORLD?
-            if (event.getSource() == DamageSource.DROWN) {
+            if (event.getSource().is(DamageTypes.DROWN)) {
                 HIT_COUNTER.merge(caveDweller.getId(), 1, Integer::sum);
 
                 if (HIT_COUNTER.get(caveDweller.getId()) > 5) {
@@ -35,7 +35,7 @@ public class ForgeEvents {
                 }
 
                 event.setCanceled(true);
-            } else if (event.getSource() == /* TODO :: Add to teleport? */ DamageSource.IN_WALL || event.getSource() == DamageSource.FALL) {
+            } else if (/* TODO :: Add to teleport? */ event.getSource().is(DamageTypes.IN_WALL) || event.getSource().is(DamageTypes.FALL)) {
                 event.setCanceled(true);
             }
         }

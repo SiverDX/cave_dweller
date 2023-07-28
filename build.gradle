@@ -31,7 +31,7 @@ java {
 }
 
 minecraft {
-    mappings channel: "${mapping_channel}", version: "${mapping_version}-${mapping_mc_version}"
+    mappings channel: "official", version: "${minecraft_version}"
 
     copyIdeResources = true
 
@@ -93,7 +93,7 @@ dependencies {
     implementation fg.deobf("software.bernie.geckolib:geckolib-forge-${geckolib_mc_version}:${geckolib_version}")
 
     // Debug
-    implementation fg.deobf("curse.maven:mob-entity-path-visualizer-590716:4063117")
+//    implementation fg.deobf("curse.maven:mob-entity-path-visualizer-590716:4063117")
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }

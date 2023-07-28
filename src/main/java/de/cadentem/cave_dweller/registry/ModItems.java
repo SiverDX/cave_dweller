@@ -1,7 +1,6 @@
 package de.cadentem.cave_dweller.registry;
 
 import de.cadentem.cave_dweller.CaveDweller;
-import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.common.ForgeSpawnEggItem;
