@@ -3,55 +3,27 @@ package de.cadentem.cave_dweller.entities.goals;
 import de.cadentem.cave_dweller.config.ServerConfig;
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
 import de.cadentem.cave_dweller.util.Utils;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.level.pathfinder.Path;
-import net.minecraft.world.phys.Vec3;
 
 import java.util.EnumSet;
 
 public class CaveDwellerChaseGoal extends Goal {
     private final CaveDwellerEntity caveDweller;
-    private final float ticksUntilChase;
-    private final double speedModifier;
-    private final int ticksToSqueeze;
     private final boolean canPenalize = false; // TODO :: Add config?
     private final boolean followTargetEvenIfNotSeen;
 
-    private Path shortPath;
-    private BlockPos nodePosition;
-    private Vec3 vecNodePosition;
-    private Vec3 vecMobPos;
-    private Vec3 xPathStartVec;
-    private Vec3 zPathStartVec;
-    private Vec3 xPathTargetVec;
-    private Vec3 zPathTargetVec;
-    private Vec3 vecTargetPos;
-    private Vec3 previousNodePosition;
-    private double pathedTargetX;
-    private double pathedTargetY;
-    private double pathedTargetZ;
-    private float currentTicksUntilChase;
     private long lastGameTimeCheck;
     private int ticksUntilNextPathRecalculation;
-    private int ticksUntilNextAttack;
-    private int failedPathFindingPenalty;
-    private int currentTicksToSqueeze;
     private int ticksUntilLeave;
-    private boolean squeezing;
+    private int ticksUntilNextAttack;
 
     public CaveDwellerChaseGoal(final CaveDwellerEntity caveDweller, double speedModifier, boolean followTargetEvenIfNotSeen, float ticksUntilChase) {
         this.caveDweller = caveDweller;
-        this.speedModifier = speedModifier;
         this.followTargetEvenIfNotSeen = followTargetEvenIfNotSeen;
         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
-        this.ticksUntilChase = ticksUntilChase;
-        this.currentTicksUntilChase = ticksUntilChase;
-        this.ticksToSqueeze = 15;
         this.ticksUntilLeave = Utils.secondsToTicks(ServerConfig.TIME_UNTIL_LEAVE_CHASE.get());
     }
 
@@ -146,10 +118,8 @@ public class CaveDwellerChaseGoal extends Goal {
             caveDweller.setTarget(null);
         }
 
-        caveDweller.squeezeCrawling = false;
-        caveDweller.getEntityData().set(CaveDwellerEntity.AGGRO_ACCESSOR, false);
+        caveDweller.isSqueezing = false;
         caveDweller.refreshDimensions();
-        currentTicksUntilChase = ticksUntilChase;
         caveDweller.getNavigation().stop();
     }
 
@@ -160,17 +130,43 @@ public class CaveDwellerChaseGoal extends Goal {
 
     @Override
     public void tick() {
+        // FIXME :: fix climbing
+        // TODO :: Move slow for 1-2 seconds then run
+        if (ticksUntilLeave <= 0 && !caveDweller.targetIsLookingAtMe) {
+            caveDweller.disappear();
+        }
+
         LivingEntity target = caveDweller.getTarget();
 
         if (!Utils.isValidPlayer(target)) {
             return;
         }
 
-        caveDweller.squeezeCrawling = squeezing;
+        Path path = caveDweller.getNavigation().getPath();
 
-        tickAggroClock();
+        if (path == null || path.isDone()) {
+            path = caveDweller.getNavigation().createPath(target, 0);
+        }
 
-        if (!squeezing) {
+        // No path could be found, try with smaller size
+        if (path == null || path.isDone()) {
+            caveDweller.isSqueezing = true;
+            caveDweller.refreshDimensions();
+            path = caveDweller.getNavigation().createPath(target, 0);
+        }
+
+        if (path != null && !path.isDone()) {
+            boolean isAboveSolid = caveDweller.level.getBlockState(caveDweller.blockPosition().above()).getMaterial().isSolid();
+            boolean isNextAboveSolid = caveDweller.level.getBlockState(path.getNextNodePos().above()).getMaterial().isSolid();
+
+            caveDweller.isSqueezing = isAboveSolid || isNextAboveSolid;
+            caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, caveDweller.isSqueezing);
+            caveDweller.refreshDimensions();
+        }
+
+        caveDweller.getNavigation().moveTo(path, caveDweller.isSqueezing ? 0.3 : 1);
+
+        if (!caveDweller.isSqueezing) {
             if (caveDweller.isAggressive()) {
                 caveDweller.getLookControl().setLookAt(target, 90.0F, 90.0F);
             } else {
@@ -178,295 +174,11 @@ public class CaveDwellerChaseGoal extends Goal {
             }
         }
 
-        if (caveDweller.getEntityData().get(CaveDwellerEntity.AGGRO_ACCESSOR)) {
-            if (squeezing) {
-                squeezingTick();
-            } else {
-                aggroTick();
-            }
-        }
+        ticksUntilNextAttack = Math.max(ticksUntilNextAttack - 1, 0);
+        double distance = caveDweller.distanceToSqr(target);
+        checkAndPerformAttack(target, distance);
 
-        --ticksUntilLeave;
-        if (ticksUntilLeave <= 0 && !caveDweller.targetIsLookingAtMe) {
-            caveDweller.disappear();
-        }
-    }
-
-    private void tickAggroClock() {
-        --currentTicksUntilChase;
-
-        if (currentTicksUntilChase <= 0.0F) {
-            caveDweller.getEntityData().set(CaveDwellerEntity.AGGRO_ACCESSOR, true);
-        }
-
-        caveDweller.refreshDimensions();
-    }
-
-    private Path getShortPath(final LivingEntity target) {
-        shortPath = caveDweller.createShortPath(target);
-        return shortPath;
-    }
-
-    private void squeezingTick() {
-        Path path = caveDweller.getNavigation().getPath();
-
-        if (path != null && !path.isDone()) {
-            nodePosition = path.getNextNodePos();
-        }
-
-        caveDweller.getNavigation().stop();
-
-        if (nodePosition == null) {
-            stopSqueezing();
-        } else if (caveDweller.getTarget() != null) {
-            if (vecNodePosition == null) {
-                vecNodePosition = new Vec3(nodePosition.getX(), nodePosition.getY(), nodePosition.getZ());
-            }
-
-            previousNodePosition = vecNodePosition;
-            Vec3 vecOldMobPos = caveDweller.getPosition(1.0F);
-
-            if (xPathStartVec == null) {
-                // Where the mob needs to move along the x-axis
-                if (vecOldMobPos.x < vecNodePosition.x) {
-                    xPathStartVec = new Vec3(vecNodePosition.x - 1.0, vecNodePosition.y - 1.0, vecNodePosition.z + 0.5);
-                    xPathTargetVec = new Vec3(vecNodePosition.x + 1.0, vecNodePosition.y - 1.0, vecNodePosition.z + 0.5);
-                } else {
-                    xPathStartVec = new Vec3(vecNodePosition.x + 1.0, vecNodePosition.y - 1.0, vecNodePosition.z + 0.5);
-                    xPathTargetVec = new Vec3(vecNodePosition.x - 1.0, vecNodePosition.y - 1.0, vecNodePosition.z + 0.5);
-                }
-            }
-
-            if (zPathStartVec == null) {
-                // Where the mob needs to move along the z-axis
-                if (vecOldMobPos.z < vecNodePosition.z) {
-                    zPathStartVec = new Vec3(vecNodePosition.x + 0.5, vecNodePosition.y - 1.0, vecNodePosition.z - 1.0);
-                    zPathTargetVec = new Vec3(vecNodePosition.x + 0.5, vecNodePosition.y - 1.0, vecNodePosition.z + 1.0);
-                } else {
-                    zPathStartVec = new Vec3(vecNodePosition.x + 0.5, vecNodePosition.y - 1.0, vecNodePosition.z + 1.0);
-                    zPathTargetVec = new Vec3(vecNodePosition.x + 0.5, vecNodePosition.y - 1.0, vecNodePosition.z - 1.0);
-                }
-            }
-
-            // Check if the block at the possible target is solid
-            BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos(xPathTargetVec.x, xPathTargetVec.y, xPathTargetVec.z);
-            BlockState blockstate = caveDweller.level.getBlockState(blockpos$mutableblockpos);
-            boolean xBlocked = blockstate.getMaterial().blocksMotion();
-
-            blockpos$mutableblockpos = new BlockPos.MutableBlockPos(zPathTargetVec.x, zPathTargetVec.y, zPathTargetVec.z);
-            blockstate = caveDweller.level.getBlockState(blockpos$mutableblockpos);
-            boolean zBlocked = blockstate.getMaterial().blocksMotion();
-
-            /* FIXME
-            Without this the Cave Dweller will bug out if he has to move on the x-axis to get to the player
-            If the blocks are set like this:
-            xxxxx
-                x
-            x   x
-            xxxxx
-            */
-            double xDifference = caveDweller.getTarget().getX() - caveDweller.getX();
-            double zDifference = caveDweller.getTarget().getZ() - caveDweller.getZ();
-
-            // FIXME :: Add y offset for certain situations to prevent it from bugging into the ground
-            if (xBlocked && Math.abs(zDifference) > Math.abs(xDifference)) {
-                vecMobPos = zPathStartVec;
-                vecTargetPos = zPathTargetVec;
-            } else if (zBlocked) {
-                vecMobPos = xPathStartVec;
-                vecTargetPos = xPathTargetVec;
-            }
-
-            if (vecTargetPos != null && vecMobPos != null) {
-                ++currentTicksToSqueeze;
-
-                // Smooth out the crawling speed
-                float lerpPercentage = (float) currentTicksToSqueeze / (float) ticksToSqueeze;
-
-                Vec3 vecCurrentMobPos = new Vec3(
-                        lerp(vecMobPos.x, vecTargetPos.x, lerpPercentage),
-                        vecMobPos.y,
-                        lerp(vecMobPos.z, vecTargetPos.z, lerpPercentage)
-                );
-
-                Vec3 rotAxis = new Vec3(vecTargetPos.x - vecMobPos.x, 0.0, vecTargetPos.z - vecMobPos.z);
-                rotAxis = rotAxis.normalize();
-
-                double rotAngle = Math.toDegrees(Math.atan2(-rotAxis.x, rotAxis.z));
-                caveDweller.setYHeadRot((float) rotAngle);
-                caveDweller.moveTo(vecCurrentMobPos.x, vecCurrentMobPos.y, vecCurrentMobPos.z, (float) rotAngle, (float) rotAngle);
-
-                if (lerpPercentage >= 1.0F) {
-                    caveDweller.setPos(vecTargetPos.x, vecTargetPos.y, vecTargetPos.z);
-                    stopSqueezing();
-                }
-            } else {
-                stopSqueezing();
-            }
-        }
-    }
-
-    private void stopSqueezing() {
-        squeezing = false;
-        caveDweller.getEntityData().set(CaveDwellerEntity.SQUEEZING_ACCESSOR, false);
-    }
-
-    private void startSqueezing() {
-        vecNodePosition = null;
-        vecMobPos = null;
-        xPathStartVec = null;
-        zPathStartVec = null;
-        xPathTargetVec = null;
-        zPathTargetVec = null;
-        vecTargetPos = null;
-        currentTicksToSqueeze = 0;
-        squeezing = true;
-        caveDweller.getEntityData().set(CaveDwellerEntity.SQUEEZING_ACCESSOR, true);
-        nodePosition = null;
-    }
-
-    private boolean shouldSqueeze(final Path pathToCheck) {
-        if (pathToCheck == null) {
-            return false;
-        } else {
-            BlockPos blockPosition;
-
-            if (!pathToCheck.isDone()) {
-                blockPosition = pathToCheck.getNextNodePos();
-
-                // Don't bother checking if the block to check is at the same location as the previous check
-                if (previousNodePosition != null && blockPosition.getX() == previousNodePosition.x && blockPosition.getY() == previousNodePosition.y && blockPosition.getZ() == previousNodePosition.z) {
-                    return false;
-                } else {
-                    // FIXME :: Doesn't check correctly
-                    BlockState blockstate = caveDweller.level.getBlockState(blockPosition.above());
-                    return blockstate.getMaterial().blocksMotion();
-                }
-            } else {
-                return false;
-            }
-        }
-    }
-
-    private Node stuckAtPoint;
-    private int stuckCounter;
-
-    private void aggroTick() {
-        LivingEntity target = caveDweller.getTarget();
-
-        if (!Utils.isValidPlayer(target)) {
-            return;
-        }
-
-        caveDweller.playChaseSound();
-
-        boolean shouldUseShortPath = true;
-        Path path = caveDweller.getNavigation().getPath();
-
-        if (path == null) {
-            path = caveDweller.getNavigation().createPath(target, 0);
-        }
-
-        boolean forceSqueeze = false;
-
-        if (path != null) {
-            // FIXME :: Workaround, climbing seems to cause lots of problems
-            if (stuckCounter >= 20) {
-                stuckAtPoint = null;
-                stuckCounter = 0;
-                path = null;
-                forceSqueeze = true;
-            } else {
-                if (stuckCounter == 0) {
-                    stuckAtPoint = path.getEndNode();
-                    stuckCounter++;
-                } else if (stuckAtPoint == path.getEndNode()) {
-                    stuckCounter++;
-                } else {
-                    stuckAtPoint = null;
-                    stuckCounter = 0;
-                }
-
-                Node finalPathPoint = path.getEndNode();
-
-                if (finalPathPoint != null) {
-                    // If we don't check this the Cave Dweller has problems with climbing (since the short path only makes him smaller while creating the path) FIXME :: Keep the smaller size while squeezing?
-                    boolean isSolidAbove = caveDweller.level.getBlockState(finalPathPoint.asBlockPos().above()).getMaterial().isSolid();
-
-                    if (!isSolidAbove) {
-                        shouldUseShortPath = false;
-                    }
-                }
-            }
-        }
-
-        if (shouldUseShortPath) {
-            // No normal path could be found, try with smaller size
-            path = getShortPath(target);
-        }
-
-        if (forceSqueeze || shouldSqueeze(path)) {
-            startSqueezing();
-            squeezing = true;
-            caveDweller.getEntityData().set(CaveDwellerEntity.SQUEEZING_ACCESSOR, true);
-        } else {
-            double distance = caveDweller.distanceToSqr(target);
-            ticksUntilNextPathRecalculation = Math.max(ticksUntilNextPathRecalculation - 1, 0);
-
-            if (ticksUntilNextPathRecalculation == 0
-                    && (followTargetEvenIfNotSeen || caveDweller.getSensing().hasLineOfSight(target)) // Only chase if the player can see the cave dweller
-                    && (
-                    pathedTargetX == 0 && pathedTargetY == 0 && pathedTargetZ == 0 // First time entering this part?
-                            || target.distanceToSqr(pathedTargetX, pathedTargetY, pathedTargetZ) >= 1 // More than 1 block apart to the target | TODO :: Why not update the location before this check?
-                            || caveDweller.getRandom().nextFloat() < 0.05 // Why the random chance?
-            )) {
-                pathedTargetX = target.getX();
-                pathedTargetY = target.getY();
-                pathedTargetZ = target.getZ();
-                ticksUntilNextPathRecalculation = 2;
-
-                // If a path could not be found add a delay before the next check || TODO :: Currently not used
-                if (canPenalize) {
-                    ticksUntilNextPathRecalculation += failedPathFindingPenalty;
-
-                    if (path != null) {
-                        Node finalPathPoint = path.getEndNode();
-
-                        if (finalPathPoint != null && target.distanceToSqr(finalPathPoint.x, finalPathPoint.y, finalPathPoint.z) < 1) {
-                            failedPathFindingPenalty = 0;
-                        } else {
-                            failedPathFindingPenalty += 10;
-                        }
-                    } else {
-                        failedPathFindingPenalty += 10;
-                    }
-                }
-
-                // FIXME :: Not sure what the point of this is - to avoid doing long path calculations too often?
-                if (distance > 1024.0) {
-                    ticksUntilNextPathRecalculation += 10;
-                } else if (distance > 256.0) {
-                    ticksUntilNextPathRecalculation += 5;
-                }
-
-                boolean canMoveTo;
-
-                if (shouldUseShortPath) {
-                    canMoveTo = caveDweller.getNavigation().moveTo(shortPath, speedModifier);
-                } else {
-                    canMoveTo = caveDweller.getNavigation().moveTo(target, speedModifier);
-                }
-
-                if (!canMoveTo) {
-                    ticksUntilNextPathRecalculation += 8;
-                }
-
-                ticksUntilNextPathRecalculation = adjustedTickDelay(ticksUntilNextPathRecalculation);
-            }
-
-            ticksUntilNextAttack = Math.max(ticksUntilNextAttack - 1, 0);
-            checkAndPerformAttack(target, distance);
-        }
+        ticksUntilLeave--;
     }
 
     private void checkAndPerformAttack(final LivingEntity target, double distanceToTarget) {
@@ -489,9 +201,5 @@ public class CaveDwellerChaseGoal extends Goal {
     private double getAttackReachSqr(final LivingEntity target) {
         // FIXME :: Why not just override the method in the CaveDwellerEntity?
         return caveDweller.getBbWidth() * 4.0F * caveDweller.getBbWidth() * 4.0F + target.getBbWidth();
-    }
-
-    private static double lerp(double a, double b, double f) {
-        return (b - a) * f + a;
     }
 }
