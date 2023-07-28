@@ -138,14 +138,14 @@ public class CaveDwellerChaseGoal extends Goal {
             path = caveDweller.getNavigation().createPath(target, 0);
         }
 
-        boolean isSqueezing = false;
+        boolean isCrawling = false;
         // TODO :: Could check if the blocks around the dweller are all solid (height of 2)?
         boolean shouldClimb = target.getY() > caveDweller.getY() /*|| (path != null && path.getNodeCount() == 1)*/;
 
         // When the node count is 1 it usually means that no actual path can be found (and the node point is just the target location)
         if (!shouldClimb && (path == null || path.isDone() || path.getNodeCount() == 1)) {
             // No path could be found, try with smaller size
-            isSqueezing = true;
+            isCrawling = true;
             caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, true);
             caveDweller.refreshDimensions();
             path = caveDweller.getNavigation().createPath(target, 0);
@@ -168,15 +168,15 @@ public class CaveDwellerChaseGoal extends Goal {
             boolean extraCheck = caveDweller.getEntityData().get(CaveDwellerEntity.CROUCHING_ACCESSOR);
             extraCheck = extraCheck && path.getNextNodePos().getY() > caveDweller.blockPosition().getY();
 
-            isSqueezing = isAboveSolid || isNextAboveSolid || extraCheck;
-            caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, isSqueezing);
+            isCrawling = isAboveSolid || isNextAboveSolid || extraCheck;
+            caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, isCrawling);
             caveDweller.refreshDimensions();
         }
 
         double speedModifier = (0.85 / maxSpeedReached) * speedUp;
-        caveDweller.getNavigation().moveTo(path, isSqueezing ? 0.3 : speedModifier);
+        caveDweller.getNavigation().moveTo(path, isCrawling ? 0.3 : speedModifier);
 
-        if (!isSqueezing) {
+        if (!isCrawling) {
             if (caveDweller.isAggressive()) {
                 caveDweller.getLookControl().setLookAt(target, 90.0F, 90.0F);
             } else {
