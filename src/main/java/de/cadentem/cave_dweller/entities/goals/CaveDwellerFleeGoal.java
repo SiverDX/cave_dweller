@@ -81,10 +81,6 @@ public class CaveDwellerFleeGoal extends Goal {
 
         if (fleePosition != null) {
             fleePath = caveDweller.getNavigation().createPath(fleePosition.x, fleePosition.y, fleePosition.z, 0);
-
-            if (fleePath == null) { // TODO
-//                fleePath = caveDweller.createShortPath(fleePosition);
-            }
         }
     }
 

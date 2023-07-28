@@ -50,9 +50,6 @@ import java.util.Random;
 public class CaveDwellerEntity extends Monster implements IAnimatable {
     private final AnimationFactory factory = GeckoLibUtil.createFactory(this);
 
-    // TODO :: 2 unused animations
-    private final RawAnimation OLD_RUN = new RawAnimation("animation.cave_dweller.run", ILoopType.EDefaultLoopTypes.LOOP);
-    private final RawAnimation IDLE = new RawAnimation("animation.cave_dweller.idle", ILoopType.EDefaultLoopTypes.LOOP);
     private final RawAnimation CHASE = new RawAnimation("animation.cave_dweller.new_run", ILoopType.EDefaultLoopTypes.LOOP);
     private final RawAnimation CHASE_IDLE = new RawAnimation("animation.cave_dweller.run_idle", ILoopType.EDefaultLoopTypes.LOOP);
     private final RawAnimation CROUCH_RUN = new RawAnimation("animation.cave_dweller.crouch_run_new", ILoopType.EDefaultLoopTypes.LOOP);
@@ -260,10 +257,11 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     @Override
     public @NotNull EntityDimensions getDimensions(@NotNull final Pose pose) {
         if (entityData.get(CRAWLING_ACCESSOR)) {
-            return new EntityDimensions(0.5F, 0.3F, true);
+            return new EntityDimensions(0.5F, 0.5F, true);
+        } else if (entityData.get(CROUCHING_ACCESSOR)) {
+            return new EntityDimensions(0.5F, 2.0F, true);
         }
 
-        // FIXME Check for crouching
         return super.getDimensions(pose);
     }
 
@@ -275,7 +273,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     }
 
     public void reRoll() {
-        /* TODO
+        /*
         Rolling STROLL (3) here causes it to just stand in place and play the stare animation
         (And playing the stare animation when it stops moving)
         */
@@ -296,7 +294,6 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             return false;
         }
 
-        // FIXME
         if (getTarget() != null /*&& getTarget().getPosition(1).y > getY()*/) {
             return entityData.get(CLIMBING_ACCESSOR);
         }
@@ -505,7 +502,6 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         return dot > 0 /*&& target.hasLineOfSight(this)*/;
     }
 
-    // TODO :: Unused
     public boolean teleportToTarget() {
         LivingEntity target = getTarget();
 
