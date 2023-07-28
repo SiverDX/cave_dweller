@@ -17,7 +17,7 @@ public abstract class MixinGroundPathNavigation extends PathNavigation {
     }
 
     /**
-     * Won't squeeze through 1x1 blocks without this<br>
+     * Won't crawl through 1x1 blocks without this<br>
      * Only required due to the climbing mechanic - but checking for climbing here seems to cause other issues
      */
     @Inject(method = "canUpdatePath", at = @At("RETURN"), cancellable = true)

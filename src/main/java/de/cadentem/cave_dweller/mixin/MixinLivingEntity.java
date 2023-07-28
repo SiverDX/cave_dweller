@@ -38,16 +38,4 @@ public abstract class MixinLivingEntity {
             }
         }
     }
-
-    /** Unsure if this is really needed */
-    @Inject(method = "getEyeHeight", at = @At("HEAD"), cancellable = true)
-    public void squeezingEyeHeight(final Pose pose, final EntityDimensions size, final CallbackInfoReturnable<Float> callback) {
-        LivingEntity livingEntity = (LivingEntity) (Object) this;
-
-        if (livingEntity instanceof CaveDwellerEntity caveDweller) {
-            if (caveDweller.getEntityData().get(CaveDwellerEntity.CRAWLING_ACCESSOR)) {
-                callback.setReturnValue(0.3F);
-            }
-        }
-    }
 }
