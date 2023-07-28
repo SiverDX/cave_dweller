@@ -75,7 +75,6 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     public Roll currentRoll = Roll.STROLL;
     public boolean isSqueezing;
     public boolean isFleeing;
-    public boolean spottedByPlayer;
     public boolean pleaseStopMoving;
     public boolean targetIsLookingAtMe;
 
