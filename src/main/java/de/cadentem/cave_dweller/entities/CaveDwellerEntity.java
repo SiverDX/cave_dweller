@@ -28,7 +28,6 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.network.PacketDistributor;
@@ -141,7 +140,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
 
     @Override
     protected void registerGoals() {
-        goalSelector.addGoal(1, new CaveDwellerChaseGoal(this,  0.85F, true, 20.0F));
+        goalSelector.addGoal(1, new CaveDwellerChaseGoal(this, true));
         goalSelector.addGoal(1, new CaveDwellerFleeGoal(this, 20.0F, 1.0));
         goalSelector.addGoal(2, new CaveDwellerBreakInvisGoal(this));
         goalSelector.addGoal(2, new CaveDwellerStareGoal(this));

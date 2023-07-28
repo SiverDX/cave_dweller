@@ -12,18 +12,16 @@ import java.util.EnumSet;
 
 public class CaveDwellerChaseGoal extends Goal {
     private final CaveDwellerEntity caveDweller;
-    private final boolean canPenalize = false; // TODO :: Add config?
     private final boolean followTargetEvenIfNotSeen;
 
     private long lastGameTimeCheck;
-    private int ticksUntilNextPathRecalculation;
     private int ticksUntilLeave;
     private int ticksUntilNextAttack;
 
-    public CaveDwellerChaseGoal(final CaveDwellerEntity caveDweller, double speedModifier, boolean followTargetEvenIfNotSeen, float ticksUntilChase) {
+    public CaveDwellerChaseGoal(final CaveDwellerEntity caveDweller, boolean followTargetEvenIfNotSeen) {
+        this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
         this.caveDweller = caveDweller;
         this.followTargetEvenIfNotSeen = followTargetEvenIfNotSeen;
-        this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
         this.ticksUntilLeave = Utils.secondsToTicks(ServerConfig.TIME_UNTIL_LEAVE_CHASE.get());
     }
 
@@ -98,7 +96,6 @@ public class CaveDwellerChaseGoal extends Goal {
     @Override
     public void start() {
         this.caveDweller.setAggressive(true);
-        ticksUntilNextPathRecalculation = 0;
         ticksUntilNextAttack = 0;
     }
 
@@ -144,7 +141,7 @@ public class CaveDwellerChaseGoal extends Goal {
         // No path could be found, try with smaller size
         if (path == null || path.isDone()) {
             isSqueezing = true;
-            caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, isSqueezing);
+            caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, true);
             caveDweller.refreshDimensions();
             path = caveDweller.getNavigation().createPath(target, 0);
         }
