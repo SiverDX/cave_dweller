@@ -6,6 +6,8 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.List;
+
 public class CaveDwellerStareGoal extends Goal {
     private final CaveDwellerEntity caveDweller;
 
@@ -63,12 +65,16 @@ public class CaveDwellerStareGoal extends Goal {
 
         boolean actuallyLooking = caveDweller.targetIsLookingAtMe && target.hasLineOfSight(caveDweller);
 
-        if (!wasNotLookingPreviously && actuallyLooking) {
+        if (wasNotLookingPreviously && actuallyLooking) {
             lookedAtCount++;
         }
 
-        if (lookedAtCount > 10 && actuallyLooking && caveDweller.getRandom().nextDouble() < 0.1) {
-            caveDweller.disappear();
+        if (lookedAtCount > 10 && actuallyLooking) {
+            if (caveDweller.getRandom().nextDouble() < 0.1) {
+                caveDweller.disappear();
+            } else if (caveDweller.getRandom().nextDouble() < 0.1) {
+                caveDweller.pickRoll(List.of(Roll.CHASE, Roll.FLEE));
+            }
         }
 
         // Move towards the player when they are not looking
@@ -82,7 +88,6 @@ public class CaveDwellerStareGoal extends Goal {
         }
 
         caveDweller.getLookControl().setLookAt(target);
-
-        wasNotLookingPreviously = actuallyLooking;
+        wasNotLookingPreviously = !actuallyLooking;
     }
 }
