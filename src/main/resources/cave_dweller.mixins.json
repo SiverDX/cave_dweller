@@ -4,8 +4,8 @@
   "package": "de.cadentem.cave_dweller.mixin",
   "refmap": "cave_dweller.refmap.json",
   "mixins": [
-    "MixinGroundPathNavigation",
-    "MixinLivingEntity"
+    "MixinLivingEntity",
+    "MixinGroundPathNavigation"
   ],
   "client": [
   ]

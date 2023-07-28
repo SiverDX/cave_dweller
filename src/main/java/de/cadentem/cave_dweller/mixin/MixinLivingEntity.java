@@ -2,16 +2,22 @@ package de.cadentem.cave_dweller.mixin;
 
 import de.cadentem.cave_dweller.config.ServerConfig;
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
+import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LivingEntity.class)
-public class MixinLivingEntity {
+public abstract class MixinLivingEntity {
+    @Shadow public abstract boolean canAttack(LivingEntity pTarget);
+
     /** Give the Cave Dweller the depth strider effect */
     @ModifyVariable(method = "travel", at = @At("STORE"), name = "f6")
     public float fakeDepthStrider(float depthStriderBonus) {
@@ -32,6 +38,18 @@ public class MixinLivingEntity {
         if (livingEntity instanceof CaveDwellerEntity caveDweller) {
             if (caveDweller.pleaseStopMoving) {
                 callback.cancel();
+            }
+        }
+    }
+
+    /** Unsure if this is really needed */
+    @Inject(method = "getEyeHeight", at = @At("HEAD"), cancellable = true)
+    public void squeezingEyeHeight(final Pose pose, final EntityDimensions size, final CallbackInfoReturnable<Float> callback) {
+        LivingEntity livingEntity = (LivingEntity) (Object) this;
+
+        if (livingEntity instanceof CaveDwellerEntity caveDweller) {
+            if (caveDweller.isSqueezing) {
+                callback.setReturnValue(0.3F);
             }
         }
     }
