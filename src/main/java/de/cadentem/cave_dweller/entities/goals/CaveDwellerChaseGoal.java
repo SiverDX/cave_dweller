@@ -156,6 +156,8 @@ public class CaveDwellerChaseGoal extends Goal {
         }
 
         if (path != null && !path.isDone()) {
+            caveDweller.playChaseSound();
+
             boolean isAboveSolid = caveDweller.level.getBlockState(caveDweller.blockPosition().above()).getMaterial().isSolid();
             boolean isNextAboveSolid = caveDweller.level.getBlockState(path.getNextNodePos().above()).getMaterial().isSolid();
 
