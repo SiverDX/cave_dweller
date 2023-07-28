@@ -184,7 +184,7 @@ public class CaveDweller {
             return false;
         }
 
-        ServerLevel serverLevel = player.getLevel();
+        Level serverLevel = player.level();
 
         // Sky light level check
         // Referenced from DaylightDetectorBlock
@@ -205,7 +205,7 @@ public class CaveDweller {
         }
 
         // Block light level check
-        LayerLightEventListener blockLighting = player.getLevel().getLightEngine().getLayerListener(LightLayer.BLOCK);
+        LayerLightEventListener blockLighting = serverLevel.getLightEngine().getLayerListener(LightLayer.BLOCK);
 
         if (blockLighting.getLightValue(player.blockPosition()) > ServerConfig.BLOCK_LIGHT_LEVEL.get()) {
             return false;

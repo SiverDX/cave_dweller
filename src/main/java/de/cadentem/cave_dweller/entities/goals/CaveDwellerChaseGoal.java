@@ -42,7 +42,7 @@ public class CaveDwellerChaseGoal extends Goal {
             return false;
         }
 
-        long ticks = caveDweller.level.getGameTime();
+        long ticks = caveDweller.level().getGameTime();
 
         if (ticks - lastGameTimeCheck < 20) {
             return false;
@@ -156,8 +156,8 @@ public class CaveDwellerChaseGoal extends Goal {
                 caveDweller.playChaseSound();
             }
 
-            boolean isAboveSolid = caveDweller.level.getBlockState(caveDweller.blockPosition().above()).getMaterial().isSolid();
-            boolean isNextAboveSolid = caveDweller.level.getBlockState(path.getNextNodePos().above()).getMaterial().isSolid();
+            boolean isAboveSolid = caveDweller.level().getBlockState(caveDweller.blockPosition().above()).isSolid();
+            boolean isNextAboveSolid = caveDweller.level().getBlockState(path.getNextNodePos().above()).isSolid();
 
             /* The next path point does not have a solid block above it but the cave dweller is crouching:
              xxxx   x = blocks | o = cave dweller

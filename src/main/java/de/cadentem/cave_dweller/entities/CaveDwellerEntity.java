@@ -168,10 +168,10 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
             BlockPos blockPosition4 = new BlockPos(posX, posY - 1, posZ);
             --runFor;
 
-            if (!level.getBlockState(blockPosition).getMaterial().blocksMotion()
-                    && !level.getBlockState(blockPosition2).getMaterial().blocksMotion()
-                    && !level.getBlockState(blockPosition3).getMaterial().blocksMotion()
-                    && level.getBlockState(blockPosition4).getMaterial().blocksMotion()) {
+            if (!level().getBlockState(blockPosition).blocksMotion()
+                    && !level().getBlockState(blockPosition2).blocksMotion()
+                    && !level().getBlockState(blockPosition3).blocksMotion()
+                    && level().getBlockState(blockPosition4).blocksMotion()) {
                 break;
             }
         }
@@ -223,7 +223,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
             targetIsLookingAtMe = isLookingAtMe(getTarget());
         }
 
-        boolean shouldCrouch = level.getBlockState(blockPosition().above().above()).getMaterial().isSolid();
+        boolean shouldCrouch = level().getBlockState(blockPosition().above().above()).isSolid();
 
         if (shouldCrouch) {
             twoBlockSpaceTimer = twoBlockSpaceCooldown;
@@ -237,7 +237,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
             }
         }
 
-        if (level instanceof ServerLevel) {
+        if (level() instanceof ServerLevel) {
             if (isAggressive() || isFleeing) {
                 entityData.set(SPOTTED_ACCESSOR, false);
             }
@@ -376,12 +376,12 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
     }
 
     private void playEntitySound(SoundEvent soundEvent, float volume, float pitch) {
-        level.playSound(null, this, soundEvent, SoundSource.HOSTILE, volume, pitch);
+        level().playSound(null, this, soundEvent, SoundSource.HOSTILE, volume, pitch);
     }
 
     // TODO :: Is this needed? Why not just playEntitySound
     private void playBlockPosSound(final ResourceLocation soundResource, float volume, float pitch) {
-        if (level instanceof ServerLevel serverLevel) {
+        if (level() instanceof ServerLevel serverLevel) {
             int radius = 60; // blocks
             serverLevel.getPlayers(player -> player.distanceToSqr(this) <= radius * radius).forEach(player -> NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CaveSound(soundResource, player.blockPosition(), volume, pitch)));
         }
@@ -514,7 +514,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
         BlockPos.MutableBlockPos validPosition = new BlockPos.MutableBlockPos(d1, d2, d3);
 
         // Don't teleport up into the air
-        while (validPosition.getY() > level.getMinBuildHeight() && !level.getBlockState(validPosition).getMaterial().blocksMotion()) {
+        while (validPosition.getY() > level().getMinBuildHeight() && !level().getBlockState(validPosition).blocksMotion()) {
             validPosition.move(Direction.DOWN);
         }
 

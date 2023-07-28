@@ -19,7 +19,7 @@ public class CaveDwellerTargetTooCloseGoal extends NearestAttackableTargetGoal<P
     @Override
     public boolean canUse() {
         if (!caveDweller.isInvisible()) {
-            LivingEntity target = caveDweller.level.getNearestPlayer(caveDweller, distanceThreshold);
+            LivingEntity target = caveDweller.level().getNearestPlayer(caveDweller, distanceThreshold);
 
             if (Utils.isValidPlayer(target) && caveDweller.isLookingAtMe(target)) {
                 this.target = target;

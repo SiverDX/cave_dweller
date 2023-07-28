@@ -31,7 +31,7 @@ java {
 }
 
 minecraft {
-    mappings channel: "official", version: "${minecraft_version}"
+    mappings channel: "${mapping_channel}", version: "${mapping_version}-${mapping_mc_version}"
 
     copyIdeResources = true
 
