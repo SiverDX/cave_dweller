@@ -32,7 +32,14 @@ public class CaveDwellerTargetSeesMeGoal extends NearestAttackableTargetGoal<Pla
     public void start() {
         caveDweller.setTarget(target);
         caveDweller.getEntityData().set(CaveDwellerEntity.SPOTTED_ACCESSOR, true);
-        caveDweller.reRoll();
+
+        // To avoid the player never noticing it (flee roll) or it just randomly aggroing through solid blocks (chase roll)
+        if (target != null && !target.hasLineOfSight(caveDweller)) {
+            caveDweller.currentRoll = Roll.STARE;
+        } else {
+            caveDweller.reRoll();
+        }
+
         super.start();
     }
 
