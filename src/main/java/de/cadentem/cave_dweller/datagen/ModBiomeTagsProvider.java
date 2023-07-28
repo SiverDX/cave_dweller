@@ -20,6 +20,6 @@ public class ModBiomeTagsProvider extends BiomeTagsProvider {
 
     @Override
     protected void addTags() {
-        tag(CAVE_DWELLER_SURFACE_BIOMES).addOptional(Tags.Biomes.IS_SPOOKY.location());
+        tag(CAVE_DWELLER_SURFACE_BIOMES).addOptionalTag(Tags.Biomes.IS_SPOOKY.location());
     }
 }
