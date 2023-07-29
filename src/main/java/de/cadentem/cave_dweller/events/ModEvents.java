@@ -24,11 +24,11 @@ public class ModEvents {
     public static void reloadConfiguration(final ModConfigEvent.Reloading event) {
         if (event.getConfig().getSpec() == ClientConfig.SPEC) {
             CaveDwellerEyesLayer.TEXTURE = new ResourceLocation(CaveDweller.MODID, "textures/entity/cave_dweller_eyes_texture" + Utils.getTextureAppend() + ".png");
-            ClientConfig.SPEC.afterReload();
+            ClientConfig.SPEC.acceptConfig(event.getConfig().getConfigData());
         }
 
         if (event.getConfig().getSpec() == ServerConfig.SPEC) {
-            ServerConfig.SPEC.afterReload();
+            ServerConfig.SPEC.acceptConfig(event.getConfig().getConfigData());
             CaveDweller.doReload = true;
         }
     }
