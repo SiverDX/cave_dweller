@@ -77,7 +77,7 @@ public class CaveDwellerFleeGoal extends Goal {
             return;
         }
 
-        Vec3 fleePosition = DefaultRandomPos.getPosAway(this.caveDweller, 32, 7, target.position());
+        Vec3 fleePosition = DefaultRandomPos.getPosAway(caveDweller, 32, 7, target.position());
 
         if (fleePosition != null) {
             fleePath = caveDweller.getNavigation().createPath(fleePosition.x, fleePosition.y, fleePosition.z, 0);

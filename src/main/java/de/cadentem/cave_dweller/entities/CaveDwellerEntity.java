@@ -22,7 +22,6 @@ import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.navigation.WallClimberNavigation;
 import net.minecraft.world.entity.monster.Monster;
@@ -225,10 +224,19 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             targetIsLookingAtMe = isLookingAtMe(getTarget());
         }
 
-        boolean isAboveSolid = level.getBlockState(blockPosition().above().above()).getMaterial().isSolid();
-        boolean isFacingAboveSolid = level.getBlockState(blockPosition().relative(getDirection()).above().above()).getMaterial().isSolid();
+        boolean isTwoAboveSolid = false;
+        boolean isFacingTwoAboveSolid = false;
+        boolean isFacingNonSolid = false;
+        boolean isFacingAboveNonSolid = false;
 
-        if (isAboveSolid || isFacingAboveSolid) {
+        if (!getEntityData().get(CRAWLING_ACCESSOR)) {
+            isTwoAboveSolid = level.getBlockState(blockPosition().above().above()).getMaterial().isSolid();
+            isFacingTwoAboveSolid = level.getBlockState(blockPosition().relative(getDirection()).above().above()).getMaterial().isSolid();
+            isFacingNonSolid = !level.getBlockState(blockPosition().relative(getDirection())).getMaterial().isSolid();
+            isFacingAboveNonSolid = !level.getBlockState(blockPosition().relative(getDirection()).above()).getMaterial().isSolid();
+        }
+
+        if (isTwoAboveSolid || (isFacingTwoAboveSolid && isFacingNonSolid && isFacingAboveNonSolid)) {
             twoBlockSpaceTimer = twoBlockSpaceCooldown;
             inTwoBlockSpace = true;
         } else {
@@ -258,7 +266,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
 
     @Override
     public @NotNull EntityDimensions getDimensions(@NotNull final Pose pose) {
-        if (entityData.get(CRAWLING_ACCESSOR)) {
+        if (entityData.get(CRAWLING_ACCESSOR)) { // TODO :: Allow config (for crawling through half-block space)?
             return new EntityDimensions(0.5F, 0.5F, true);
         } else if (entityData.get(CROUCHING_ACCESSOR)) {
             return new EntityDimensions(0.5F, 2.0F, true);
@@ -318,6 +326,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         AnimationBuilder builder = new AnimationBuilder();
         AnimationController<CaveDwellerEntity> controller = event.getController();
 
+        // TODO :: Climbing animation
         if (entityData.get(CRAWLING_ACCESSOR)) {
             // Crawling
             crawlingTicks = Utils.secondsToTicks(1);
@@ -327,7 +336,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             // Crawling end
             // TODO :: set a flag in the chase logic when the dweller is at the last node to crawl and then play this
             crawlingTicks--;
-            builder.addAnimation(CRAWL_END.animationName, CRAWL_END.loopType);
+            builder.addAnimation(CRAWL.animationName, ILoopType.EDefaultLoopTypes.HOLD_ON_LAST_FRAME);
         } else if (entityData.get(CROUCHING_ACCESSOR)) {
             // Crouching
             if (event.isMoving()) {
