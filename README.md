@@ -16,7 +16,6 @@ Recommend using https://www.curseforge.com/minecraft/texture-packs/creepier-cave
 # To Consider
 
 ## Bugs
-* Rails / half blocks cause problems with crawling
 * Climbing and Crawling don't like each other
 * Crawling animation (need to split between crawling and crawling finished)
 

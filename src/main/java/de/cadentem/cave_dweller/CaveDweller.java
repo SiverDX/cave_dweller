@@ -41,7 +41,7 @@ import software.bernie.geckolib3.GeckoLib;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Mod(CaveDweller.MODID)
 public class CaveDweller {
@@ -108,17 +108,16 @@ public class CaveDweller {
         }
 
         Iterable<Entity> entities = overworld.getAllEntities();
-        AtomicBoolean dwellerExists = new AtomicBoolean(false);
+        AtomicInteger caveDwellerCount = new AtomicInteger();
 
         entities.forEach(entity -> {
             if (entity instanceof CaveDwellerEntity) {
-                dwellerExists.set(true);
-                resetCalmTimer();
+                caveDwellerCount.getAndAdd(1);
             }
         });
 
         --noiseTimer;
-        if (noiseTimer <= 0 && (dwellerExists.get() || calmTimer <= Utils.secondsToTicks(ServerConfig.CAN_SPAWN_MAX.get()) / 2)) {
+        if (noiseTimer <= 0 && (caveDwellerCount.get() > 0 || calmTimer <= Utils.secondsToTicks(ServerConfig.CAN_SPAWN_MAX.get()) / 2)) {
             overworld.getPlayers(this::playCaveSoundToSpelunkers);
             resetNoiseTimer();
         }
@@ -126,7 +125,7 @@ public class CaveDweller {
         boolean canSpawn = calmTimer <= 0;
 
         --calmTimer; // FIXME :: Maybe don't let this go too low (if server is running empty e.g.)
-        if (canSpawn && !dwellerExists.get()) {
+        if (canSpawn && caveDwellerCount.get() < ServerConfig.MAXIMUM_AMOUNT.get()) {
             if (random.nextDouble() <= ServerConfig.SPAWN_CHANCE_PER_TICK.get()) {
                 spelunkers.clear();
 
@@ -220,16 +219,6 @@ public class CaveDweller {
 
         // Check biome
         Holder<Biome> biome = serverLevel.getBiome(player.blockPosition());
-        /*
-        ResourceLocation biomeResource = ForgeRegistries.BIOMES.getKey(biome.get());
-
-        if (biomeResource == null) {
-            LOG.warn("Biome [" + biome.get() + "] could not be determined while checking if the cave dweller can spawn");
-            return false;
-        }
-
-        boolean isBiomeInList = ServerConfig.SURFACE_BIOME.get().contains(biomeResource.toString());
-        */
 
         boolean isWhitelist = ServerConfig.SURFACE_BIOMES_IS_WHITELIST.get();
         boolean isBiomeInList = biome.is(ModBiomeTagsProvider.CAVE_DWELLER_SURFACE_BIOMES);
