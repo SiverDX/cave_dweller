@@ -318,29 +318,30 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         AnimationBuilder builder = new AnimationBuilder();
         AnimationController<CaveDwellerEntity> controller = event.getController();
 
-        if (isAggressive()) {
-            if (entityData.get(CRAWLING_ACCESSOR)) {
-                crawlingTicks = Utils.secondsToTicks(1);
-                // Crawling
-                builder.addAnimation(CRAWL.animationName, CRAWL.loopType);
-            } else if (crawlingTicks > 0) {
-                // TODO :: set a flag in the chase logic when the dweller is at the last node to crawl and then play this
-                crawlingTicks--;
-                builder.addAnimation(CRAWL_END.animationName, CRAWL_END.loopType);
-            } else if (entityData.get(CROUCHING_ACCESSOR)) {
-                // Crouching
-                if (event.isMoving()) {
-                    builder.addAnimation(CROUCH_RUN.animationName, CROUCH_RUN.loopType);
-                } else {
-                    builder.addAnimation(CROUCH_IDLE.animationName, CROUCH_IDLE.loopType);
-                }
+        if (entityData.get(CRAWLING_ACCESSOR)) {
+            // Crawling
+            crawlingTicks = Utils.secondsToTicks(1);
+            builder.addAnimation(CRAWL.animationName, CRAWL.loopType);
+            return PlayState.CONTINUE;
+        } else if (crawlingTicks > 0) {
+            // Crawling end
+            // TODO :: set a flag in the chase logic when the dweller is at the last node to crawl and then play this
+            crawlingTicks--;
+            builder.addAnimation(CRAWL_END.animationName, CRAWL_END.loopType);
+        } else if (entityData.get(CROUCHING_ACCESSOR)) {
+            // Crouching
+            if (event.isMoving()) {
+                builder.addAnimation(CROUCH_RUN.animationName, CROUCH_RUN.loopType);
             } else {
-                // Chase
-                if (event.isMoving()) {
-                    builder.addAnimation(CHASE.animationName, CHASE.loopType);
-                } else {
-                    builder.addAnimation(CHASE_IDLE.animationName, CHASE_IDLE.loopType);
-                }
+                builder.addAnimation(CROUCH_IDLE.animationName, CROUCH_IDLE.loopType);
+            }
+        } else if (isAggressive()) {
+            // Chase
+            if (event.isMoving()) {
+                // FIXME :: With the ramp up the cave dweller slides for 1 second or so -> add a flag to determine when this should be played?
+                builder.addAnimation(CHASE.animationName, CHASE.loopType);
+            } else {
+                builder.addAnimation(CHASE_IDLE.animationName, CHASE_IDLE.loopType);
             }
         } else if (entityData.get(FLEEING_ACCESSOR)) {
             // Fleeing

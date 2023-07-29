@@ -9,39 +9,39 @@ public class ServerConfig {
     public static final ForgeConfigSpec SPEC;
 
     // Timers
-    public static ForgeConfigSpec.ConfigValue<Integer> CAN_SPAWN_MIN;
-    public static ForgeConfigSpec.ConfigValue<Integer> CAN_SPAWN_MAX;
-    public static ForgeConfigSpec.ConfigValue<Integer> CAN_SPAWN_COOLDOWN;
-    public static ForgeConfigSpec.ConfigValue<Double> CAN_SPAWN_COOLDOWN_CHANCE;
-    public static ForgeConfigSpec.ConfigValue<Integer> RESET_NOISE_MIN;
-    public static ForgeConfigSpec.ConfigValue<Integer> RESET_NOISE_MAX;
-    public static ForgeConfigSpec.ConfigValue<Integer> TIME_UNTIL_LEAVE;
-    public static ForgeConfigSpec.ConfigValue<Integer> TIME_UNTIL_LEAVE_CHASE;
+    public static ForgeConfigSpec.IntValue CAN_SPAWN_MIN;
+    public static ForgeConfigSpec.IntValue CAN_SPAWN_MAX;
+    public static ForgeConfigSpec.IntValue CAN_SPAWN_COOLDOWN;
+    public static ForgeConfigSpec.DoubleValue CAN_SPAWN_COOLDOWN_CHANCE;
+    public static ForgeConfigSpec.IntValue RESET_NOISE_MIN;
+    public static ForgeConfigSpec.IntValue RESET_NOISE_MAX;
+    public static ForgeConfigSpec.IntValue TIME_UNTIL_LEAVE;
+    public static ForgeConfigSpec.IntValue TIME_UNTIL_LEAVE_CHASE;
 
     // Spawn Conditions
-    public static ForgeConfigSpec.ConfigValue<Double> SPAWN_CHANCE_PER_TICK;
+    public static ForgeConfigSpec.DoubleValue SPAWN_CHANCE_PER_TICK;
     public static ForgeConfigSpec.ConfigValue<Integer> SPAWN_HEIGHT;
-    public static ForgeConfigSpec.ConfigValue<Boolean> ALLOW_SURFACE_SPAWN;
-    public static ForgeConfigSpec.ConfigValue<Integer> SKY_LIGHT_LEVEL;
-    public static ForgeConfigSpec.ConfigValue<Integer> BLOCK_LIGHT_LEVEL;
+    public static ForgeConfigSpec.BooleanValue ALLOW_SURFACE_SPAWN;
+    public static ForgeConfigSpec.IntValue SKY_LIGHT_LEVEL;
+    public static ForgeConfigSpec.IntValue BLOCK_LIGHT_LEVEL;
     public static ForgeConfigSpec.ConfigValue<List<String>> DIMENSION_WHITELIST;
     public static ForgeConfigSpec.BooleanValue SURFACE_BIOMES_IS_WHITELIST;
-    public static ForgeConfigSpec.ConfigValue<List<String>> SURFACE_BIOMES;
+    public static ForgeConfigSpec.IntValue MAXIMUM_AMOUNT;
 
     // Behaviour
-    public static ForgeConfigSpec.ConfigValue<Integer> SPOTTING_RANGE;
-    public static ForgeConfigSpec.ConfigValue<Boolean> CAN_CLIMB;
-    public static ForgeConfigSpec.ConfigValue<Boolean> CAN_BREAK_DOOR;
-    public static ForgeConfigSpec.ConfigValue<Integer> BREAK_DOOR_TIME;
-    public static ForgeConfigSpec.ConfigValue<Boolean> ALLOW_RIDING;
-    public static ForgeConfigSpec.ConfigValue<Boolean> TARGET_INVISIBLE;
+    public static ForgeConfigSpec.IntValue SPOTTING_RANGE;
+    public static ForgeConfigSpec.BooleanValue CAN_CLIMB;
+    public static ForgeConfigSpec.BooleanValue CAN_BREAK_DOOR;
+    public static ForgeConfigSpec.IntValue BREAK_DOOR_TIME;
+    public static ForgeConfigSpec.BooleanValue ALLOW_RIDING;
+    public static ForgeConfigSpec.BooleanValue TARGET_INVISIBLE;
 
     // Attributes
-    public static ForgeConfigSpec.ConfigValue<Double> MAX_HEALTH;
-    public static ForgeConfigSpec.ConfigValue<Double> ATTACK_DAMAGE;
-    public static ForgeConfigSpec.ConfigValue<Double> ATTACK_SPEED;
-    public static ForgeConfigSpec.ConfigValue<Double> MOVEMENT_SPEED;
-    public static ForgeConfigSpec.ConfigValue<Double> DEPTH_STRIDER_BONUS;
+    public static ForgeConfigSpec.DoubleValue MAX_HEALTH;
+    public static ForgeConfigSpec.DoubleValue ATTACK_DAMAGE;
+    public static ForgeConfigSpec.DoubleValue ATTACK_SPEED;
+    public static ForgeConfigSpec.DoubleValue MOVEMENT_SPEED;
+    public static ForgeConfigSpec.DoubleValue DEPTH_STRIDER_BONUS;
 
     static {
         BUILDER.push("Timers");
@@ -62,15 +62,7 @@ public class ServerConfig {
         SKY_LIGHT_LEVEL = BUILDER.comment("The maximum sky light level the Cave Dweller can spawn at").defineInRange("sky_light_level", 8, 0, 15);
         BLOCK_LIGHT_LEVEL = BUILDER.comment("The maximum block light level the Cave Dweller can spawn at").defineInRange("block_light_level", 15, 0, 15);
         SURFACE_BIOMES_IS_WHITELIST = BUILDER.comment("Use the surface biome list either as white- or blacklist").define("surface_biomes_is_whitelist", true);
-        /*
-        SURFACE_BIOMES = BUILDER.comment("Either white- or blacklist of the surface biomes the Cave Dweller can spawn in (Syntax: modid:biome, e.g. `minecraft:plains`)").define("surface_biomes", List.of(), element -> {
-            if (element instanceof String string) {
-                return string.split(":").length == 2;
-            }
-
-            return false;
-        });
-        */
+        MAXIMUM_AMOUNT = BUILDER.comment("The maximum amount of cave dwellers which can exist at the same time").defineInRange("maximum_amoount", 1, 0, 100);
         BUILDER.pop();
 
         BUILDER.push("Behaviour");
