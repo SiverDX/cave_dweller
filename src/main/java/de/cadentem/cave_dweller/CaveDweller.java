@@ -18,6 +18,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
@@ -138,6 +139,7 @@ public class CaveDweller {
                     CaveDwellerEntity caveDweller = new CaveDwellerEntity(ModEntityTypes.CAVE_DWELLER.get(), overworld);
                     caveDweller.setInvisible(true);
                     caveDweller.setPos(caveDweller.generatePos(victim));
+                    caveDweller.finalizeSpawn(overworld, overworld.getCurrentDifficultyAt(victim.blockPosition()), MobSpawnType.TRIGGERED, null, null);
                     overworld.addFreshEntity(caveDweller);
 
                     resetCalmTimer();
