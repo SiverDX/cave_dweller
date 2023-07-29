@@ -223,9 +223,10 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
             targetIsLookingAtMe = isLookingAtMe(getTarget());
         }
 
-        boolean shouldCrouch = level().getBlockState(blockPosition().above().above()).isSolid();
+        boolean isAboveSolid = level().getBlockState(blockPosition().above().above()).isSolid();
+        boolean isFacingAboveSolid = level().getBlockState(blockPosition().relative(getDirection()).above().above()).isSolid();
 
-        if (shouldCrouch) {
+        if (isAboveSolid || isFacingAboveSolid) {
             twoBlockSpaceTimer = twoBlockSpaceCooldown;
             inTwoBlockSpace = true;
         } else {
@@ -318,6 +319,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
                 // Squeezing
                 return state.setAndContinue(CRAWL);
             } else if (crawlingTicks > 0) {
+                // TODO :: set a flag in the chase logic when the dweller is at the last node to crawl and then play this
                 crawlingTicks--;
                 return state.setAndContinue(CRAWL_END);
             } else if (entityData.get(CROUCHING_ACCESSOR)) {
