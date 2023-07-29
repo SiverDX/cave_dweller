@@ -47,7 +47,7 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 import java.util.List;
 import java.util.Random;
 
-public class CaveDwellerEntity extends Monster implements GeoEntity  {
+public class CaveDwellerEntity extends Monster implements GeoEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
     private final RawAnimation CHASE = RawAnimation.begin().then("animation.cave_dweller.new_run", LoopType.LOOP);
@@ -314,29 +314,29 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
     private int crawlingTicks;
 
     private PlayState predicate(final AnimationState<CaveDwellerEntity> state) {
-        if (isAggressive()) {
-            if (entityData.get(CRAWLING_ACCESSOR)) {
-                crawlingTicks = Utils.secondsToTicks(1);
-                // Squeezing
-                return state.setAndContinue(CRAWL);
-            } else if (crawlingTicks > 0) {
-                // TODO :: set a flag in the chase logic when the dweller is at the last node to crawl and then play this
-                crawlingTicks--;
-                return state.setAndContinue(CRAWL_END);
-            } else if (entityData.get(CROUCHING_ACCESSOR)) {
-                // Crouching
-                if (state.isMoving()) {
-                    return state.setAndContinue(CROUCH_RUN);
-                } else {
-                    return state.setAndContinue(CROUCH_IDLE);
-                }
+        if (entityData.get(CRAWLING_ACCESSOR)) {
+            // Crawling
+            crawlingTicks = Utils.secondsToTicks(1);
+            return state.setAndContinue(CRAWL);
+        } else if (crawlingTicks > 0) {
+            // Crawling end
+            // TODO :: set a flag in the chase logic when the dweller is at the last node to crawl and then play this
+            crawlingTicks--;
+            return state.setAndContinue(CRAWL_END);
+        } else if (entityData.get(CROUCHING_ACCESSOR)) {
+            // Crouching
+            if (state.isMoving()) {
+                return state.setAndContinue(CROUCH_RUN);
             } else {
-                // Chase
-                if (state.isMoving()) {
-                    return state.setAndContinue(CHASE);
-                } else {
-                    return state.setAndContinue(CHASE_IDLE);
-                }
+                return state.setAndContinue(CROUCH_IDLE);
+            }
+        } else if (isAggressive()) {
+            // Chase
+            if (state.isMoving()) {
+                // FIXME :: With the ramp up the cave dweller slides for 1 second or so -> add a flag to determine when this should be played?
+                return state.setAndContinue(CHASE);
+            } else {
+                return state.setAndContinue(CHASE_IDLE);
             }
         } else if (entityData.get(FLEEING_ACCESSOR)) {
             // Fleeing
@@ -345,7 +345,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity  {
             } else {
                 return state.setAndContinue(CHASE_IDLE);
             }
-        } else if (entityData.get(SPOTTED_ACCESSOR) && !state.isMoving()) {
+        } else if (pleaseStopMoving || entityData.get(SPOTTED_ACCESSOR) && !state.isMoving()) {
             // Spotted
             return state.setAndContinue(IS_SPOTTED);
         } else {
