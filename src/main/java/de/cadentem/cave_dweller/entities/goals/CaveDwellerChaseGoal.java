@@ -97,7 +97,7 @@ public class CaveDwellerChaseGoal extends Goal {
 
     @Override
     public void start() {
-        this.caveDweller.setAggressive(true);
+        caveDweller.setAggressive(true);
         ticksUntilNextAttack = 0;
     }
 
@@ -113,6 +113,7 @@ public class CaveDwellerChaseGoal extends Goal {
         caveDweller.getNavigation().stop();
 
         speedUp = 0;
+        caveDweller.setAggressive(false);
     }
 
     @Override
@@ -196,6 +197,7 @@ public class CaveDwellerChaseGoal extends Goal {
     }
 
     private void checkAndPerformAttack(final LivingEntity target, double distanceToTarget) {
+        // TODO :: Check if there is a wall between the player and the cave dweller?
         double attackReach = getAttackReachSqr(target);
 
         if (distanceToTarget <= attackReach && ticksUntilNextAttack <= 0) {

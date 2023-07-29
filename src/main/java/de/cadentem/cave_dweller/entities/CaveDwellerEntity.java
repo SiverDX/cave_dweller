@@ -223,10 +223,19 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
             targetIsLookingAtMe = isLookingAtMe(getTarget());
         }
 
-        boolean isAboveSolid = level().getBlockState(blockPosition().above().above()).isSolid();
-        boolean isFacingAboveSolid = level().getBlockState(blockPosition().relative(getDirection()).above().above()).isSolid();
+        boolean isTwoAboveSolid = false;
+        boolean isFacingTwoAboveSolid = false;
+        boolean isFacingNonSolid = false;
+        boolean isFacingAboveNonSolid = false;
 
-        if (isAboveSolid || isFacingAboveSolid) {
+        if (!getEntityData().get(CRAWLING_ACCESSOR)) {
+            isTwoAboveSolid = level().getBlockState(blockPosition().above().above()).isSolid();
+            isFacingTwoAboveSolid = level().getBlockState(blockPosition().relative(getDirection()).above().above()).isSolid();
+            isFacingNonSolid = !level().getBlockState(blockPosition().relative(getDirection())).isSolid();
+            isFacingAboveNonSolid = !level().getBlockState(blockPosition().relative(getDirection()).above()).isSolid();
+        }
+
+        if (isTwoAboveSolid || (isFacingTwoAboveSolid && isFacingNonSolid && isFacingAboveNonSolid)) {
             twoBlockSpaceTimer = twoBlockSpaceCooldown;
             inTwoBlockSpace = true;
         } else {
@@ -256,7 +265,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
 
     @Override
     public @NotNull EntityDimensions getDimensions(@NotNull final Pose pose) {
-        if (entityData.get(CRAWLING_ACCESSOR)) {
+        if (entityData.get(CRAWLING_ACCESSOR)) { // TODO :: Allow config (for crawling through half-block space)?
             return new EntityDimensions(0.5F, 0.5F, true);
         } else if (entityData.get(CROUCHING_ACCESSOR)) {
             return new EntityDimensions(0.5F, 2.0F, true);
