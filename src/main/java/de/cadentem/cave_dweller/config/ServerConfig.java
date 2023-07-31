@@ -27,8 +27,9 @@ public class ServerConfig {
     public static ForgeConfigSpec.BooleanValue ALLOW_SURFACE_SPAWN;
     public static ForgeConfigSpec.IntValue SKY_LIGHT_LEVEL;
     public static ForgeConfigSpec.IntValue BLOCK_LIGHT_LEVEL;
-    public static ForgeConfigSpec.ConfigValue<List<String>> DIMENSION_WHITELIST;
     public static ForgeConfigSpec.IntValue MAXIMUM_AMOUNT;
+    // Dimensions
+    public static ForgeConfigSpec.ConfigValue<List<String>> DIMENSION_WHITELIST;
     // Biomes
     public static ForgeConfigSpec.BooleanValue OVERRIDE_BIOME_DATAPACK_CONFIG;
     public static ForgeConfigSpec.BooleanValue SURFACE_BIOMES_IS_WHITELIST;
@@ -74,6 +75,9 @@ public class ServerConfig {
         SKY_LIGHT_LEVEL = BUILDER.comment("The maximum sky light level the Cave Dweller can spawn at").defineInRange("sky_light_level", 8, 0, 15);
         BLOCK_LIGHT_LEVEL = BUILDER.comment("The maximum block light level the Cave Dweller can spawn at").defineInRange("block_light_level", 15, 0, 15);
         MAXIMUM_AMOUNT = BUILDER.comment("The maximum amount of cave dwellers which can exist at the same time").defineInRange("maximum_amoount", 1, 0, 100);
+        BUILDER.push("Dimensions");
+        DIMENSION_WHITELIST = BUILDER.comment("The dimensions where the Cave Dweller can spawn in (Whitelist)").define("dimension_whitelist", List.of("minecraft:overworld"), ServerConfig::resourcePredicate);
+        BUILDER.pop();
         BUILDER.push("Biomes");
         OVERRIDE_BIOME_DATAPACK_CONFIG = BUILDER.comment("If you don't want to create a datapack to configure the biomes").define("override_biome_datapack_config", false);
         SURFACE_BIOMES_IS_WHITELIST = BUILDER.comment("Use the surface biome list either as white- or blacklist").define("surface_biomes_is_whitelist", true);
@@ -94,7 +98,7 @@ public class ServerConfig {
         MAX_HEALTH = BUILDER.comment("Maximum health").defineInRange("maximum_health", 60.0, 1, 100_000);
         ATTACK_DAMAGE = BUILDER.comment("Attack damage").defineInRange("attack_damage", 6.0, 0, 1_000);
         ATTACK_SPEED = BUILDER.comment("Attack speed").defineInRange("attack_speed", 0.35, 0, 10);
-        MOVEMENT_SPEED = BUILDER.comment("Movement speed").defineInRange("movement_speed", 0.5, 0, 5);
+        MOVEMENT_SPEED = BUILDER.comment("Movement speed").defineInRange("movement_speed", 0.3, 0, 5);
         DEPTH_STRIDER_BONUS = BUILDER.comment("Depth Strider (movement speed in water) bonus").defineInRange("depth_strider_bonus", 1.5, 0, 3);
         BUILDER.pop();
 
@@ -110,7 +114,7 @@ public class ServerConfig {
             return string.split(":").length == 2;
         }
 
-        if (element instanceof List list) {
+        if (element instanceof List<?> list) {
             for (Object listElement : list) {
                 if (listElement instanceof String string) {
                     if (!(string.split(":").length == 2)) {
