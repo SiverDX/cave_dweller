@@ -36,6 +36,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.slf4j.Logger;
 import software.bernie.geckolib.GeckoLib;
 
@@ -224,7 +225,14 @@ public class CaveDweller {
         Holder<Biome> biome = serverLevel.getBiome(player.blockPosition());
 
         boolean isWhitelist = ServerConfig.SURFACE_BIOMES_IS_WHITELIST.get();
-        boolean isBiomeInList = biome.is(ModBiomeTagsProvider.CAVE_DWELLER_SURFACE_BIOMES);
+        boolean isBiomeInList;
+
+        if (ServerConfig.OVERRIDE_BIOME_DATAPACK_CONFIG.get()) {
+            ResourceLocation resource = ForgeRegistries.BIOMES.getKey(biome.get());
+            isBiomeInList = resource != null && ServerConfig.SURFACE_BIOMES.get().contains(resource.toString());
+        } else {
+            isBiomeInList = biome.is(ModBiomeTagsProvider.CAVE_DWELLER_SURFACE_BIOMES);
+        }
 
         if (isOnSurface && (/* Whitelist */ !isBiomeInList && isWhitelist || /* Blacklist */ isBiomeInList && !isWhitelist)) {
             return false;
