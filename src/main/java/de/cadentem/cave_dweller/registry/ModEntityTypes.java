@@ -15,7 +15,7 @@ public class ModEntityTypes {
     public static final RegistryObject<EntityType<CaveDwellerEntity>> CAVE_DWELLER = ENTITY_TYPES.register(
             "cave_dweller",
             () -> EntityType.Builder.of(CaveDwellerEntity::new, MobCategory.MONSTER)
-                    .sized(0.5F, 3.0F)
+                    .sized(0.5F, 2.7F)
                     .build(new ResourceLocation(CaveDweller.MODID, "cave_dweller").toString())
     );
 
