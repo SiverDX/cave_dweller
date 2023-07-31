@@ -4,8 +4,6 @@ import de.cadentem.cave_dweller.CaveDweller;
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingKnockBackEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -44,16 +42,10 @@ public class ForgeEvents {
         }
     }
 
-    /** Not all dimensions are immediately loaded */
-    @SubscribeEvent
-    public static void handleDimensionChange(final EntityTravelToDimensionEvent event) {
-        CaveDweller.RELOAD_MISSING = true;
-    }
-
     /** Prevent knockback while climbing */
     @SubscribeEvent
     public static void handleKnockback(final LivingKnockBackEvent event) {
-        LivingEntity entity = event.getEntity();
+        Entity entity = event.getEntity();
 
         if (entity instanceof CaveDwellerEntity caveDweller) {
             if (caveDweller.isClimbing()) {

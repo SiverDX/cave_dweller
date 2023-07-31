@@ -20,7 +20,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.lighting.LayerLightEventListener;
@@ -37,7 +36,6 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
-import org.apache.logging.log4j.core.jmx.Server;
 import org.slf4j.Logger;
 import software.bernie.geckolib3.GeckoLib;
 
@@ -55,7 +53,6 @@ public class CaveDweller {
     private static final int NOISE_TIMER = 1;
 
     public static boolean RELOAD_ALL = false;
-    public static boolean RELOAD_MISSING = false;
 
     private final Random random = new Random();
     // TODO :: Could add these as capability to the level so they don't always reset on a server restart
@@ -100,29 +97,18 @@ public class CaveDweller {
 
         if (RELOAD_ALL) {
             timers.clear();
+            RELOAD_ALL = false;
         }
 
         String key = event.world.dimension().location().toString();
 
         // Not doing this together in the `handeLogic` loop in case the boolean gets set from a different thread
-        // FIXME :: The reload booleans are kinda useless in this version
-        if (RELOAD_ALL || timers.get(key) == null) {
+        if (timers.get(key) == null) {
             boolean isRelevant = ServerConfig.DIMENSION_WHITELIST.get().contains(key);
 
             if (isRelevant) {
                 resetTimers(key);
             }
-
-            RELOAD_ALL = false;
-            RELOAD_MISSING = false;
-        } else if (RELOAD_MISSING || timers.get(key) == null) {
-            boolean isRelevant = timers.get(key) == null && ServerConfig.DIMENSION_WHITELIST.get().contains(key);
-
-            if (isRelevant) {
-                resetTimers(key);
-            }
-
-            RELOAD_MISSING = false;
         }
 
         if (timers.get(key) != null && event.world instanceof ServerLevel serverLevel) {
