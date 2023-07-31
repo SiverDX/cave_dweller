@@ -164,8 +164,8 @@ public class CaveDwellerChaseGoal extends Goal {
             x o x
             xxxxx
             */
-            boolean isFacingSolid = caveDweller.level.getBlockState(caveDweller.blockPosition().relative(caveDweller.getDirection())).getMaterial().isSolid();
-            boolean isFacingAboveSolid = caveDweller.level.getBlockState(caveDweller.blockPosition().relative(caveDweller.getDirection()).above()).getMaterial().isSolid();
+            boolean isFacingSolid = caveDweller.level().getBlockState(caveDweller.blockPosition().relative(caveDweller.getDirection())).isSolid();
+            boolean isFacingAboveSolid = caveDweller.level().getBlockState(caveDweller.blockPosition().relative(caveDweller.getDirection()).above()).isSolid();
             boolean extraCheck = isFacingSolid && !isFacingAboveSolid;
 
             isCrawling = isAboveSolid || isNextAboveSolid || (caveDweller.getEntityData().get(CaveDwellerEntity.CROUCHING_ACCESSOR) && extraCheck);
