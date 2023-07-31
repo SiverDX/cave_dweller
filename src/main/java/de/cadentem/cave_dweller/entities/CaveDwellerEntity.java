@@ -58,7 +58,6 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
     private final RawAnimation CALM_STILL = RawAnimation.begin().then("animation.cave_dweller.calm_idle", LoopType.LOOP);
     private final RawAnimation IS_SPOTTED = RawAnimation.begin().then("animation.cave_dweller.spotted", LoopType.HOLD_ON_LAST_FRAME);
     private final RawAnimation CRAWL = RawAnimation.begin().then("animation.cave_dweller.crawl", LoopType.LOOP);
-    private final RawAnimation CRAWL_END = RawAnimation.begin().then("animation.cave_dweller.crawl_end", LoopType.HOLD_ON_LAST_FRAME);
     private final RawAnimation FLEE = RawAnimation.begin().then("animation.cave_dweller.flee", LoopType.LOOP);
 
     public static final EntityDataAccessor<Boolean> FLEEING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
@@ -334,18 +333,10 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         return new WallClimberNavigation(this, level);
     }
 
-    private int crawlingTicks;
-
     private PlayState predicate(final AnimationState<CaveDwellerEntity> state) {
         if (entityData.get(CRAWLING_ACCESSOR)) {
             // Crawling
-            crawlingTicks = Utils.secondsToTicks(1);
             return state.setAndContinue(CRAWL);
-        } else if (crawlingTicks > 0) {
-            // Crawling end
-            // TODO :: set a flag in the chase logic when the dweller is at the last node to crawl and then play this
-            crawlingTicks--;
-            return state.setAndContinue(CRAWL_END);
         } else if (entityData.get(CROUCHING_ACCESSOR)) {
             // Crouching
             if (state.isMoving()) {

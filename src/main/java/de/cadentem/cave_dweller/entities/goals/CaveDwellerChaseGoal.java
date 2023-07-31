@@ -71,8 +71,6 @@ public class CaveDwellerChaseGoal extends Goal {
         // Try path with smaller size
         caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, true);
         caveDweller.refreshDimensions();
-        caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, false);
-
         path = caveDweller.getNavigation().createPath(target, 0);
 
         return path != null;
@@ -109,11 +107,12 @@ public class CaveDwellerChaseGoal extends Goal {
             caveDweller.setTarget(null);
         }
 
-        caveDweller.refreshDimensions();
-        caveDweller.getNavigation().stop();
-
         speedUp = 0;
+
         caveDweller.setAggressive(false);
+        caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, false);
+        caveDweller.getNavigation().stop();
+        caveDweller.refreshDimensions();
     }
 
     @Override
@@ -140,11 +139,10 @@ public class CaveDwellerChaseGoal extends Goal {
         }
 
         boolean isCrawling = false;
-        // TODO :: Could check if the blocks around the dweller are all solid (height of 2)?
-        boolean shouldClimb = target.getY() > caveDweller.getY() /*|| (path != null && path.getNodeCount() == 1)*/;
+        boolean shouldClimb = target.getY() > caveDweller.getY(); // TODO :: Add `path != null` and a try-climb logic if it does not get closer to target within x seconds?
 
         // When the node count is 1 it usually means that no actual path can be found (and the node point is just the target location)
-        if (!shouldClimb && (path == null || path.isDone() || path.getNodeCount() == 1)) {
+        if (!shouldClimb && (caveDweller.distanceToSqr(target) > 0.3 && (path == null || path.isDone() || path.getNodeCount() == 1))) {
             // No path could be found, try with smaller size
             isCrawling = true;
             caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, true);
@@ -175,8 +173,8 @@ public class CaveDwellerChaseGoal extends Goal {
             caveDweller.refreshDimensions();
         }
 
-        double speedModifier = (0.85 / maxSpeedReached) * speedUp;
-        caveDweller.getNavigation().moveTo(path, isCrawling ? 0.3 : speedModifier);
+        double speedModifier = (0.85 / maxSpeedReached) * speedUp; // FIXME :: Makes animation / movement wonky
+        caveDweller.getNavigation().moveTo(path, isCrawling ? 0.3 : 0.85);
 
         if (!isCrawling) {
             if (caveDweller.isAggressive()) {
