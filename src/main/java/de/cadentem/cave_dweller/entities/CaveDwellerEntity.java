@@ -59,7 +59,6 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     private final RawAnimation CALM_STILL = new RawAnimation("animation.cave_dweller.calm_idle", ILoopType.EDefaultLoopTypes.LOOP);
     private final RawAnimation IS_SPOTTED = new RawAnimation("animation.cave_dweller.spotted", ILoopType.EDefaultLoopTypes.HOLD_ON_LAST_FRAME);
     private final RawAnimation CRAWL = new RawAnimation("animation.cave_dweller.crawl", ILoopType.EDefaultLoopTypes.LOOP);
-    private final RawAnimation CRAWL_END = new RawAnimation("animation.cave_dweller.crawl_end", ILoopType.EDefaultLoopTypes.HOLD_ON_LAST_FRAME);
     private final RawAnimation FLEE = new RawAnimation("animation.cave_dweller.flee", ILoopType.EDefaultLoopTypes.LOOP);
 
     public static final EntityDataAccessor<Boolean> FLEEING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
@@ -335,8 +334,6 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         return new WallClimberNavigation(this, level);
     }
 
-    private int crawlingTicks;
-
     private PlayState predicate(final AnimationEvent<CaveDwellerEntity> event) {
         AnimationBuilder builder = new AnimationBuilder();
         AnimationController<CaveDwellerEntity> controller = event.getController();
@@ -344,14 +341,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         // TODO :: Climbing animation
         if (entityData.get(CRAWLING_ACCESSOR)) {
             // Crawling
-            crawlingTicks = Utils.secondsToTicks(1);
             builder.addAnimation(CRAWL.animationName, CRAWL.loopType);
-            return PlayState.CONTINUE;
-        } else if (crawlingTicks > 0) {
-            // Crawling end
-            // TODO :: set a flag in the chase logic when the dweller is at the last node to crawl and then play this
-            crawlingTicks--;
-            builder.addAnimation(CRAWL.animationName, ILoopType.EDefaultLoopTypes.HOLD_ON_LAST_FRAME);
         } else if (entityData.get(CROUCHING_ACCESSOR)) {
             // Crouching
             if (event.isMoving()) {
