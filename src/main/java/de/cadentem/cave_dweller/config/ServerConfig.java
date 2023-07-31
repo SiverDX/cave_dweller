@@ -9,12 +9,15 @@ public class ServerConfig {
     public static final ForgeConfigSpec SPEC;
 
     // Timers
+    // Spawn
     public static ForgeConfigSpec.IntValue CAN_SPAWN_MIN;
     public static ForgeConfigSpec.IntValue CAN_SPAWN_MAX;
     public static ForgeConfigSpec.IntValue CAN_SPAWN_COOLDOWN;
     public static ForgeConfigSpec.DoubleValue CAN_SPAWN_COOLDOWN_CHANCE;
+    // Noise
     public static ForgeConfigSpec.IntValue RESET_NOISE_MIN;
     public static ForgeConfigSpec.IntValue RESET_NOISE_MAX;
+    // Leave
     public static ForgeConfigSpec.IntValue TIME_UNTIL_LEAVE;
     public static ForgeConfigSpec.IntValue TIME_UNTIL_LEAVE_CHASE;
 
@@ -25,8 +28,11 @@ public class ServerConfig {
     public static ForgeConfigSpec.IntValue SKY_LIGHT_LEVEL;
     public static ForgeConfigSpec.IntValue BLOCK_LIGHT_LEVEL;
     public static ForgeConfigSpec.ConfigValue<List<String>> DIMENSION_WHITELIST;
-    public static ForgeConfigSpec.BooleanValue SURFACE_BIOMES_IS_WHITELIST;
     public static ForgeConfigSpec.IntValue MAXIMUM_AMOUNT;
+    // Biomes
+    public static ForgeConfigSpec.BooleanValue OVERRIDE_BIOME_DATAPACK_CONFIG;
+    public static ForgeConfigSpec.BooleanValue SURFACE_BIOMES_IS_WHITELIST;
+    public static ForgeConfigSpec.ConfigValue<List<String>> SURFACE_BIOMES;
 
     // Behaviour
     public static ForgeConfigSpec.IntValue SPOTTING_RANGE;
@@ -45,14 +51,20 @@ public class ServerConfig {
 
     static {
         BUILDER.push("Timers");
+        BUILDER.push("Spawn");
         CAN_SPAWN_MIN = BUILDER.comment("Minimum time between spawns in seconds").defineInRange("can_spawn_min", 300, 0, 60 * 60 * 24);
         CAN_SPAWN_MAX = BUILDER.comment("Maximum time between spawns in seconds").defineInRange("can_spawn_max", 600, 0, 60 * 60 * 24);
         CAN_SPAWN_COOLDOWN_CHANCE = BUILDER.comment("Chance for a spawn cooldown to occur").defineInRange("can_spawn_cooldown_chance", 0.4, 0, 1);
         CAN_SPAWN_COOLDOWN = BUILDER.comment("Spawn cooldown length in seconds").defineInRange("can_spawn_cooldown", 1200, 0, 60 * 60 * 24);
+        BUILDER.pop();
+        BUILDER.push("Noise");
         RESET_NOISE_MIN = BUILDER.comment("Minimum time between noise occurrences in seconds").defineInRange("reset_noise_min", 240, 0, 60 * 60 * 24);
         RESET_NOISE_MAX = BUILDER.comment("Maximum time between noise occurrences in seconds").defineInRange("reset_noise_max", 360, 0, 60 * 60 * 24);
+        BUILDER.pop();
+        BUILDER.push("Leave");
         TIME_UNTIL_LEAVE = BUILDER.comment("Time (in seconds) it takes for the Cave Dweller to leave").defineInRange("time_until_leave", 300, 1, 6000);
         TIME_UNTIL_LEAVE_CHASE = BUILDER.comment("Time (in seconds) it takes for the Cave Dweller to leave once a chase begins").defineInRange("time_until_leave_chase", 30, 1, 600);
+        BUILDER.pop();
         BUILDER.pop();
 
         BUILDER.push("Spawn Conditions");
@@ -61,8 +73,12 @@ public class ServerConfig {
         ALLOW_SURFACE_SPAWN = BUILDER.comment("Whether the Cave Dweller can spawn on the surface or not").define("allow_surface_spawn", false);
         SKY_LIGHT_LEVEL = BUILDER.comment("The maximum sky light level the Cave Dweller can spawn at").defineInRange("sky_light_level", 8, 0, 15);
         BLOCK_LIGHT_LEVEL = BUILDER.comment("The maximum block light level the Cave Dweller can spawn at").defineInRange("block_light_level", 15, 0, 15);
-        SURFACE_BIOMES_IS_WHITELIST = BUILDER.comment("Use the surface biome list either as white- or blacklist").define("surface_biomes_is_whitelist", true);
         MAXIMUM_AMOUNT = BUILDER.comment("The maximum amount of cave dwellers which can exist at the same time").defineInRange("maximum_amoount", 1, 0, 100);
+        BUILDER.push("Biomes");
+        OVERRIDE_BIOME_DATAPACK_CONFIG = BUILDER.comment("If you don't want to create a datapack to configure the biomes").define("override_biome_datapack_config", false);
+        SURFACE_BIOMES_IS_WHITELIST = BUILDER.comment("Use the surface biome list either as white- or blacklist").define("surface_biomes_is_whitelist", true);
+        SURFACE_BIOMES = BUILDER.comment("Either white- or blacklist of the surface biomes the Cave Dweller can spawn in (Syntax: modid:biome, e.g. `minecraft:plains`)").define("surface_biomes", List.of(), ServerConfig::resourcePredicate);
+        BUILDER.pop();
         BUILDER.pop();
 
         BUILDER.push("Behaviour");
@@ -83,5 +99,31 @@ public class ServerConfig {
         BUILDER.pop();
 
         SPEC = BUILDER.build();
+    }
+
+    private static boolean resourcePredicate(final Object element) {
+        if (element == null) {
+            return false;
+        }
+
+        if (element instanceof String string) {
+            return string.split(":").length == 2;
+        }
+
+        if (element instanceof List list) {
+            for (Object listElement : list) {
+                if (listElement instanceof String string) {
+                    if (!(string.split(":").length == 2)) {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
     }
 }
