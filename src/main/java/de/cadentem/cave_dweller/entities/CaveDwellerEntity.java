@@ -8,6 +8,7 @@ import de.cadentem.cave_dweller.registry.ModSounds;
 import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -116,7 +117,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         double maxHealth = 60.0;
         double attackDamage = 6.0;
         double attackSpeed = 0.35;
-        double movementSpeed = 0.5;
+        double movementSpeed = 0.3;
         double followRange = 100.0;
 
         return CaveDwellerEntity.createMobAttributes()
@@ -223,19 +224,33 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
             targetIsLookingAtMe = isLookingAtMe(getTarget());
         }
 
-        boolean isTwoAboveSolid = false;
-        boolean isFacingTwoAboveSolid = false;
-        boolean isFacingNonSolid = false;
-        boolean isFacingAboveNonSolid = false;
+        boolean shouldCrouch = false;
 
         if (!getEntityData().get(CRAWLING_ACCESSOR)) {
-            isTwoAboveSolid = level().getBlockState(blockPosition().above().above()).isSolid();
-            isFacingTwoAboveSolid = level().getBlockState(blockPosition().relative(getDirection()).above().above()).isSolid();
-            isFacingNonSolid = !level().getBlockState(blockPosition().relative(getDirection())).isSolid();
-            isFacingAboveNonSolid = !level().getBlockState(blockPosition().relative(getDirection()).above()).isSolid();
+            boolean isTwoAboveSolid = level().getBlockState(blockPosition().above().above()).isSolid();
+
+            /* [x : blocks | o : cave dweller]
+            To handle these two variants:
+                o
+            xxxxo       xxxxo
+                o           o
+            xxxxx       xxxxo
+            */
+            Vec3i offset = new Vec3i(getDirection().getStepX(), getDirection().getStepY(), getDirection().getStepZ());
+            boolean isFacingSolid = level().getBlockState(blockPosition().relative(getDirection())).isSolid();
+
+            if (isFacingSolid) {
+                offset = offset.offset(0, 1, 0); // TODO :: Offset by step height?
+            }
+
+            boolean isOffsetFacingSolid = level().getBlockState(blockPosition().offset(offset)).isSolid();
+            boolean isOffsetFacingTwoAboveSolid = level().getBlockState(blockPosition().offset(offset).above().above()).isSolid();
+            boolean isOffsetFacingAboveSolid = level().getBlockState(blockPosition().relative(getDirection()).above()).isSolid();
+
+            shouldCrouch = isTwoAboveSolid || (!isOffsetFacingSolid && !isOffsetFacingAboveSolid && isOffsetFacingTwoAboveSolid);
         }
 
-        if (isTwoAboveSolid || (isFacingTwoAboveSolid && isFacingNonSolid && isFacingAboveNonSolid)) {
+        if (shouldCrouch) {
             twoBlockSpaceTimer = twoBlockSpaceCooldown;
             inTwoBlockSpace = true;
         } else {
@@ -268,7 +283,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         if (entityData.get(CRAWLING_ACCESSOR)) { // TODO :: Allow config (for crawling through half-block space)?
             return new EntityDimensions(0.5F, 0.5F, true);
         } else if (entityData.get(CROUCHING_ACCESSOR)) {
-            return new EntityDimensions(0.5F, 2.0F, true);
+            return new EntityDimensions(0.5F, 1.7F, true);
         }
 
         return super.getDimensions(pose);

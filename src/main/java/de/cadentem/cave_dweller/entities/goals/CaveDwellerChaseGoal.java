@@ -160,16 +160,17 @@ public class CaveDwellerChaseGoal extends Goal {
             boolean isAboveSolid = caveDweller.level().getBlockState(caveDweller.blockPosition().above()).isSolid();
             boolean isNextAboveSolid = caveDweller.level().getBlockState(path.getNextNodePos().above()).isSolid();
 
-            /* The next path point does not have a solid block above it but the cave dweller is crouching:
-             xxxx   x = blocks | o = cave dweller
+            /* [x = blocks | o = cave dweller]
+             xxxx
               o x
             x o x
             xxxxx
             */
-            boolean extraCheck = caveDweller.getEntityData().get(CaveDwellerEntity.CROUCHING_ACCESSOR);
-            extraCheck = extraCheck && path.getNextNodePos().getY() > caveDweller.blockPosition().getY();
+            boolean isFacingSolid = caveDweller.level.getBlockState(caveDweller.blockPosition().relative(caveDweller.getDirection())).getMaterial().isSolid();
+            boolean isFacingAboveSolid = caveDweller.level.getBlockState(caveDweller.blockPosition().relative(caveDweller.getDirection()).above()).getMaterial().isSolid();
+            boolean extraCheck = isFacingSolid && !isFacingAboveSolid;
 
-            isCrawling = isAboveSolid || isNextAboveSolid || extraCheck;
+            isCrawling = isAboveSolid || isNextAboveSolid || (caveDweller.getEntityData().get(CaveDwellerEntity.CROUCHING_ACCESSOR) && extraCheck);
             caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, isCrawling);
             caveDweller.refreshDimensions();
         }
