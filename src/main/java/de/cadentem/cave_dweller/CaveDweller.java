@@ -20,7 +20,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.lighting.LayerLightEventListener;
@@ -40,7 +39,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import org.slf4j.Logger;
 import software.bernie.geckolib.GeckoLib;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,13 +49,15 @@ public class CaveDweller {
     public static final String MODID = "cave_dweller";
     public static final Logger LOG = LogUtils.getLogger();
 
-    public static boolean doReload;
+    private static final int SPAWN_TIMER = 0;
+    private static final int NOISE_TIMER = 1;
 
-    private final List<Player> spelunkers = new ArrayList<>();
+    public static boolean RELOAD_ALL = false;
+    public static boolean RELOAD_MISSING = false;
+
     private final Random random = new Random();
-
-    private int calmTimer;
-    private int noiseTimer;
+    // TODO :: Could add these as capability to the level so they don't always reset on a server restart
+    private final HashMap<String, Integer[]> timers = new HashMap<>();
 
     public CaveDweller() {
         GeckoLib.initialize();
@@ -86,7 +87,7 @@ public class CaveDweller {
 
     @SubscribeEvent
     public void serverStartup(final ServerStartedEvent event) {
-        doReload = true;
+        RELOAD_ALL = true;
     }
 
     @SubscribeEvent
@@ -96,74 +97,98 @@ public class CaveDweller {
             return;
         }
 
-        if (doReload) {
-            spelunkers.clear();
-            resetNoiseTimer();
-            resetCalmTimer();
-            doReload = false;
-            LOG.info("Values have been reloaded");
+        if (RELOAD_ALL) {
+            timers.clear();
         }
 
-        ServerLevel overworld = event.getServer().getLevel(Level.OVERWORLD);
+        Iterable<ServerLevel> levels = event.getServer().getAllLevels();
 
-        if (overworld == null) {
+        // Not doing this together in the `handeLogic` loop in case the boolean gets set from a different thread
+        if (RELOAD_ALL) {
+            for (ServerLevel level : levels) {
+                String key = level.dimension().location().toString();
+                boolean isRelevant = ServerConfig.DIMENSION_WHITELIST.get().contains(key);
+
+                if (isRelevant) {
+                    resetTimers(key);
+                }
+            }
+
+            RELOAD_ALL = false;
+            RELOAD_MISSING = false;
+        } else if (RELOAD_MISSING) {
+            for (ServerLevel level : levels) {
+                String key = level.dimension().location().toString();
+                boolean isRelevant = timers.get(key) == null && ServerConfig.DIMENSION_WHITELIST.get().contains(key);
+
+                if (isRelevant) {
+                    resetTimers(key);
+                }
+            }
+
+            RELOAD_MISSING = false;
+        }
+
+        for (ServerLevel level : levels) {
+            String key = level.dimension().location().toString();
+
+            if (timers.get(key) != null) {
+                handleLogic(level);
+            }
+        }
+    }
+
+    private void handleLogic(final ServerLevel level) {
+        if (level == null) {
             return;
         }
 
-        Iterable<Entity> entities = overworld.getAllEntities();
+        List<ServerPlayer> players = level.getPlayers(this::isRelevantPlayer);
+
+        if (players.isEmpty()) {
+            return;
+        }
+
+        Iterable<Entity> entities = level.getAllEntities();
         AtomicInteger caveDwellerCount = new AtomicInteger();
 
+        // TODO :: Have a global (across all levels) count?
         entities.forEach(entity -> {
             if (entity instanceof CaveDwellerEntity) {
                 caveDwellerCount.getAndAdd(1);
             }
         });
 
-        --noiseTimer;
-        if (noiseTimer <= 0 && (caveDwellerCount.get() > 0 || calmTimer <= Utils.secondsToTicks(ServerConfig.CAN_SPAWN_MAX.get()) / 2)) {
-            overworld.getPlayers(this::playCaveSoundToSpelunkers);
-            resetNoiseTimer();
+        String key = level.dimension().location().toString();
+        timers.merge(key, new Integer[]{-1, -1}, this::addDelta);
+
+        if (timers.get(key)[NOISE_TIMER] <= 0 && (caveDwellerCount.get() > 0 || timers.get(key)[SPAWN_TIMER] <= Utils.secondsToTicks(ServerConfig.CAN_SPAWN_MAX.get()) / 2)) {
+            players.forEach(this::playCaveSoundToSpelunkers);
+            resetNoiseTimer(key);
         }
 
-        boolean canSpawn = calmTimer <= 0;
+        boolean canSpawn = timers.get(key)[SPAWN_TIMER] <= 0;
 
-        --calmTimer; // FIXME :: Maybe don't let this go too low (if server is running empty e.g.)
         if (canSpawn && caveDwellerCount.get() < ServerConfig.MAXIMUM_AMOUNT.get()) {
             if (random.nextDouble() <= ServerConfig.SPAWN_CHANCE_PER_TICK.get()) {
-                spelunkers.clear();
+                if (!players.isEmpty()) {
+                    Player victim = players.get(random.nextInt(players.size()));
+                    level.getPlayers(this::playCaveSoundToSpelunkers);
 
-                overworld.getPlayers(this::listSpelunkers);
-
-                if (!spelunkers.isEmpty()) {
-                    Player victim = spelunkers.get(random.nextInt(spelunkers.size()));
-                    overworld.getPlayers(this::playCaveSoundToSpelunkers);
-
-                    CaveDwellerEntity caveDweller = new CaveDwellerEntity(ModEntityTypes.CAVE_DWELLER.get(), overworld);
+                    CaveDwellerEntity caveDweller = new CaveDwellerEntity(ModEntityTypes.CAVE_DWELLER.get(), level);
                     caveDweller.setInvisible(true);
                     caveDweller.setPos(caveDweller.generatePos(victim));
-                    caveDweller.finalizeSpawn(overworld, overworld.getCurrentDifficultyAt(victim.blockPosition()), MobSpawnType.TRIGGERED, null, null);
-                    overworld.addFreshEntity(caveDweller);
+                    caveDweller.finalizeSpawn(level, level.getCurrentDifficultyAt(victim.blockPosition()), MobSpawnType.TRIGGERED, null, null);
+                    level.addFreshEntity(caveDweller);
 
-                    resetCalmTimer();
-                    resetNoiseTimer();
+                    resetSpawnTimer(key);
+                    resetNoiseTimer(key);
                 }
             }
         }
     }
 
-    private boolean listSpelunkers(final ServerPlayer player) {
-        if (isPlayerSpelunker(player)) {
-            spelunkers.add(player);
-        }
-
-        return true;
-    }
-
-    public boolean playCaveSoundToSpelunkers(final ServerPlayer player) {
-        if (!isPlayerSpelunker(player)) {
-            return false;
-        }
-
+    private boolean playCaveSoundToSpelunkers(final ServerPlayer player) {
         ResourceLocation soundLocation = switch (random.nextInt(4)) {
             case 1 -> ModSounds.CAVENOISE_2.get().getLocation();
             case 2 -> ModSounds.CAVENOISE_3.get().getLocation();
@@ -176,7 +201,7 @@ public class CaveDweller {
         return true;
     }
 
-    public boolean isPlayerSpelunker(final ServerPlayer player) {
+    private boolean isRelevantPlayer(final ServerPlayer player) {
         if (!Utils.isValidPlayer(player)) {
             return false;
         }
@@ -241,10 +266,18 @@ public class CaveDweller {
         return true;
     }
 
-    private void resetCalmTimer() {
+    private void resetTimers(final String key) {
+        resetSpawnTimer(key);
+        resetNoiseTimer(key);
+
+        LOG.info("Timers have been reset for [" + key + "]");
+    }
+
+    private void resetSpawnTimer(final String key) {
+        int spawnTimer;
 
         if (random.nextDouble() <= ServerConfig.CAN_SPAWN_COOLDOWN_CHANCE.get()) {
-            calmTimer = Utils.secondsToTicks(ServerConfig.CAN_SPAWN_COOLDOWN.get());
+            spawnTimer = Utils.secondsToTicks(ServerConfig.CAN_SPAWN_COOLDOWN.get());
         } else {
             int min = ServerConfig.CAN_SPAWN_MIN.get();
             int max = ServerConfig.CAN_SPAWN_MAX.get();
@@ -257,11 +290,13 @@ public class CaveDweller {
                 LOG.error("Configuration for `RESET_CALM` was wrong - max [{}] was smaller than min [{}] - values have been switched to prevent a crash", max, min);
             }
 
-            calmTimer = random.nextInt(Utils.secondsToTicks(min), Utils.secondsToTicks(max + 1));
+            spawnTimer = random.nextInt(Utils.secondsToTicks(min), Utils.secondsToTicks(max + 1));
         }
+
+        timers.merge(key, new Integer[]{spawnTimer, 0}, this::setSpawnTimer);
     }
 
-    private void resetNoiseTimer() {
+    private void resetNoiseTimer(final String key) {
         int min = ServerConfig.RESET_NOISE_MIN.get();
         int max = ServerConfig.RESET_NOISE_MAX.get();
 
@@ -273,6 +308,34 @@ public class CaveDweller {
             LOG.error("Configuration for `RESET_NOISE` was wrong - max [{}] was smaller than min [{}] - values have been switched to prevent a crash", max, min);
         }
 
-        noiseTimer = random.nextInt(Utils.secondsToTicks(min), Utils.secondsToTicks(max + 1));
+        int noiseTimer = random.nextInt(Utils.secondsToTicks(min), Utils.secondsToTicks(max + 1));
+        timers.merge(key, new Integer[]{0, noiseTimer}, this::setNoiseTimer);
+    }
+
+    private Integer[] addDelta(final Integer[] current, final Integer[] delta) {
+        Integer[] result = new Integer[2];
+
+        result[SPAWN_TIMER] = current[SPAWN_TIMER] + delta[SPAWN_TIMER];
+        result[NOISE_TIMER] = current[NOISE_TIMER] + delta[NOISE_TIMER];
+
+        return result;
+    }
+
+    private Integer[] setNoiseTimer(final Integer[] current, final Integer[] delta) {
+        Integer[] result = new Integer[2];
+
+        result[SPAWN_TIMER] = current[SPAWN_TIMER];
+        result[NOISE_TIMER] = delta[NOISE_TIMER];
+
+        return result;
+    }
+
+    private Integer[] setSpawnTimer(final Integer[] current, final Integer[] delta) {
+        Integer[] result = new Integer[2];
+
+        result[SPAWN_TIMER] = delta[SPAWN_TIMER];
+        result[NOISE_TIMER] = current[NOISE_TIMER];
+
+        return result;
     }
 }
