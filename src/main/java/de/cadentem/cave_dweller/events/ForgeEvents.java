@@ -5,6 +5,7 @@ import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -40,5 +41,11 @@ public class ForgeEvents {
                 event.setCanceled(true);
             }
         }
+    }
+
+    /** Not all dimensions are immediately loaded */
+    @SubscribeEvent
+    public static void handleDimensionChange(final EntityTravelToDimensionEvent event) {
+        CaveDweller.RELOAD_MISSING = true;
     }
 }
