@@ -22,6 +22,7 @@ public class ModEvents {
 
     @SubscribeEvent
     public static void reloadConfiguration(final ModConfigEvent.Reloading event) {
+        // TODO :: Only reset timers when needed
         if (event.getConfig().getSpec() == ClientConfig.SPEC) {
             CaveDwellerEyesLayer.TEXTURE = new ResourceLocation(CaveDweller.MODID, "textures/entity/cave_dweller_eyes_texture" + Utils.getTextureAppend() + ".png");
             ClientConfig.SPEC.acceptConfig(event.getConfig().getConfigData());
