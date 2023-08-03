@@ -2,9 +2,15 @@ package de.cadentem.cave_dweller.util;
 
 import de.cadentem.cave_dweller.config.ServerConfig;
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraftforge.common.Tags;
 import org.jetbrains.annotations.NotNull;
 
 public class Utils {
@@ -46,5 +52,34 @@ public class Utils {
 
     public static LivingEntity getValidTarget(@NotNull final CaveDwellerEntity caveDweller) {
         return caveDweller.level().getNearestPlayer(caveDweller.position().x, caveDweller.position().y, caveDweller.position().z, 128, Utils::isValidPlayer);
+    }
+
+    public static boolean isOnSurface(final Entity entity) {
+        if (entity == null) {
+            return false;
+        }
+
+        if (entity.getLevel() instanceof  ServerLevel serverLevel) {
+            BlockPos blockPosition = entity.blockPosition();
+
+            if (serverLevel.canSeeSky(blockPosition)) {
+                return true;
+            }
+
+            Holder<Biome> biome = serverLevel.getBiome(blockPosition);
+
+            if (biome.is(Tags.Biomes.IS_CAVE) || biome.is(Tags.Biomes.IS_UNDERGROUND)) {
+                return false;
+            }
+
+            // canSeeSky returns false when you stand below trees etc.
+            int baseSkyLightLevel = serverLevel.getBrightness(LightLayer.SKY, blockPosition) - serverLevel.getSkyDarken();
+
+            if (baseSkyLightLevel > 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

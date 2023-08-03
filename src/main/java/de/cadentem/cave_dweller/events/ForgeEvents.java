@@ -1,6 +1,7 @@
 package de.cadentem.cave_dweller.events;
 
 import de.cadentem.cave_dweller.CaveDweller;
+import de.cadentem.cave_dweller.config.ServerConfig;
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.LivingEntity;
@@ -21,8 +22,7 @@ public class ForgeEvents {
         LivingEntity entity = event.getEntity();
 
         if (entity instanceof CaveDwellerEntity caveDweller) {
-            // TODO :: Also do it for OUT_OF_WORLD?
-            if (event.getSource().is(DamageTypes.DROWN)) {
+            if (event.getSource().is(DamageTypes.DROWN) || event.getSource().is(DamageTypes.OUT_OF_WORLD) || event.getSource().is(DamageTypes.IN_WALL)) {
                 HIT_COUNTER.merge(caveDweller.getId(), 1, Integer::sum);
 
                 if (HIT_COUNTER.get(caveDweller.getId()) > 5) {
@@ -31,13 +31,20 @@ public class ForgeEvents {
                     boolean couldTeleport = caveDweller.teleportToTarget();
 
                     if (!couldTeleport) {
-                        // TODO :: Reduce the spawn time if this happens?
+                        String key = caveDweller.level.dimension().location().toString();
+
+                        if (ServerConfig.isValidDimension(key)) {
+                            int spawnDelta = (int) (ServerConfig.CAN_SPAWN_MIN.get() * 0.3);
+                            int noiseDelta = (int) (ServerConfig.RESET_NOISE_MIN.get() * 0.3);
+                            CaveDweller.speedUpTimers(key, spawnDelta, noiseDelta);
+                        }
+
                         caveDweller.disappear();
                     }
                 }
 
                 event.setCanceled(true);
-            } else if (/* TODO :: Add to teleport? */ event.getSource().is(DamageTypes.IN_WALL) || event.getSource().is(DamageTypes.FALL)) {
+            } else if (event.getSource().is(DamageTypes.FALL)) {
                 event.setCanceled(true);
             }
         }

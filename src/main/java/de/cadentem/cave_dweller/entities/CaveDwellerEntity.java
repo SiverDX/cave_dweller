@@ -216,9 +216,6 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
             targetSelector.tick();
         }
 
-        // The calls in the goal seem to only update the server side, this updates the rendered hitbox e.g.
-        refreshDimensions();
-
         if (getTarget() != null) {
             targetIsLookingAtMe = isLookingAtMe(getTarget());
         }
@@ -239,7 +236,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
             boolean isFacingSolid = level().getBlockState(blockPosition().relative(getDirection())).isSolid();
 
             if (isFacingSolid) {
-                offset = offset.offset(0, 1, 0); // TODO :: Offset by step height?
+                offset = offset.offset(0, 1, 0);
             }
 
             boolean isOffsetFacingSolid = level().getBlockState(blockPosition().offset(offset)).isSolid();
@@ -273,6 +270,8 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         if (entityData.get(SPOTTED_ACCESSOR)) {
             playSpottedSound();
         }
+
+        refreshDimensions();
 
         super.tick();
     }
@@ -347,7 +346,6 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         } else if (isAggressive()) {
             // Chase
             if (state.isMoving()) {
-                // FIXME :: With the ramp up the cave dweller slides for 1 second or so -> add a flag to determine when this should be played?
                 return state.setAndContinue(CHASE);
             } else {
                 return state.setAndContinue(CHASE_IDLE);
