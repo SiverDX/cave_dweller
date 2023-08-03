@@ -217,9 +217,6 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             targetSelector.tick();
         }
 
-        // The calls in the goal seem to only update the server side, this updates the rendered hitbox e.g.
-        refreshDimensions();
-
         if (getTarget() != null) {
             targetIsLookingAtMe = isLookingAtMe(getTarget());
         }
@@ -240,7 +237,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             boolean isFacingSolid = level.getBlockState(blockPosition().relative(getDirection())).getMaterial().isSolid();
 
             if (isFacingSolid) {
-                offset = offset.offset(0, 1, 0); // TODO :: Offset by step height?
+                offset = offset.offset(0, 1, 0);
             }
 
             boolean isOffsetFacingSolid = level.getBlockState(blockPosition().offset(offset)).getMaterial().isSolid();
@@ -274,6 +271,8 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         if (entityData.get(SPOTTED_ACCESSOR)) {
             playSpottedSound();
         }
+
+        refreshDimensions();
 
         super.tick();
     }
@@ -352,7 +351,6 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         } else if (isAggressive()) {
             // Chase
             if (event.isMoving()) {
-                // FIXME :: With the ramp up the cave dweller slides for 1 second or so -> add a flag to determine when this should be played?
                 builder.addAnimation(CHASE.animationName, CHASE.loopType);
             } else {
                 builder.addAnimation(CHASE_IDLE.animationName, CHASE_IDLE.loopType);
