@@ -23,7 +23,7 @@ public class CaveDwellerRenderer extends GeoEntityRenderer<CaveDwellerEntity> {
         return new ResourceLocation(CaveDweller.MODID, "textures/entity/cave_dweller_texture" + Utils.getTextureAppend() + ".png");
     }
 
-    @Override
+    @Override // FIXME :: In some cases this does not get called, resulting in an invisible entity?
     public void render(final CaveDwellerEntity entity, float entityYaw, float partialTick, @NotNull final PoseStack poseStack, @NotNull final MultiBufferSource bufferSource, int packedLight) {
         if (entity.isBaby()) {
             poseStack.scale(0.1F, 0.1F, 0.1F);
