@@ -157,7 +157,7 @@ public class ServerConfig {
             boolean isBiomeInList;
 
             if (OVERRIDE_BIOME_DATAPACK_CONFIG.get()) {
-                ResourceLocation resource = ForgeRegistries.BIOMES.getKey(biome.get());
+                ResourceLocation resource = ForgeRegistries.BIOMES.getKey(biome.value());
                 isBiomeInList = resource != null && SURFACE_BIOMES.get().contains(resource.toString());
             } else {
                 isBiomeInList = biome.is(ModBiomeTagsProvider.CAVE_DWELLER_SURFACE_BIOMES);

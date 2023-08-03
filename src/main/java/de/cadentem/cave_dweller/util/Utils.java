@@ -68,7 +68,7 @@ public class Utils {
 
             Holder<Biome> biome = serverLevel.getBiome(blockPosition);
 
-            if (biome.is(Tags.Biomes.IS_CAVE) || biome.is(Tags.Biomes.IS_UNDERGROUND)) {
+            if (biome.is(Tags.Biomes.IS_UNDERGROUND)) {
                 return false;
             }
 
