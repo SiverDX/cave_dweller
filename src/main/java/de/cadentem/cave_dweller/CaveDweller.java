@@ -18,6 +18,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.lighting.LayerLightEventListener;
 import net.minecraftforge.common.MinecraftForge;
@@ -206,7 +207,7 @@ public class CaveDweller {
             return false;
         }
 
-        ServerLevel serverLevel = player.getLevel();
+        Level serverLevel = player.level();
 
         // Sky light level check
         // Referenced from DaylightDetectorBlock

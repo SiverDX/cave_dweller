@@ -22,7 +22,7 @@ public class ForgeEvents {
         LivingEntity entity = event.getEntity();
 
         if (entity instanceof CaveDwellerEntity caveDweller) {
-            if (event.getSource().is(DamageTypes.DROWN) || event.getSource().is(DamageTypes.OUT_OF_WORLD) || event.getSource().is(DamageTypes.IN_WALL)) {
+            if (event.getSource().is(DamageTypes.DROWN) || event.getSource().is(DamageTypes.FELL_OUT_OF_WORLD) || event.getSource().is(DamageTypes.IN_WALL)) {
                 HIT_COUNTER.merge(caveDweller.getId(), 1, Integer::sum);
 
                 if (HIT_COUNTER.get(caveDweller.getId()) > 5) {
@@ -31,7 +31,7 @@ public class ForgeEvents {
                     boolean couldTeleport = caveDweller.teleportToTarget();
 
                     if (!couldTeleport) {
-                        String key = caveDweller.level.dimension().location().toString();
+                        String key = caveDweller.level().dimension().location().toString();
 
                         if (ServerConfig.isValidDimension(key)) {
                             int spawnDelta = (int) (ServerConfig.CAN_SPAWN_MIN.get() * 0.3);

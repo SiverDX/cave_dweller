@@ -150,7 +150,7 @@ public class ServerConfig {
             return false;
         }
 
-        if (entity.getLevel() instanceof ServerLevel serverLevel) {
+        if (entity.level() instanceof ServerLevel serverLevel) {
             Holder<Biome> biome = serverLevel.getBiome(entity.blockPosition());
 
             boolean isWhitelist = SURFACE_BIOMES_IS_WHITELIST.get();

@@ -59,7 +59,7 @@ public class Utils {
             return false;
         }
 
-        if (entity.getLevel() instanceof  ServerLevel serverLevel) {
+        if (entity.level() instanceof  ServerLevel serverLevel) {
             BlockPos blockPosition = entity.blockPosition();
 
             if (serverLevel.canSeeSky(blockPosition)) {
