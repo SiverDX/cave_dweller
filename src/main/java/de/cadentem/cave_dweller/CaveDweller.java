@@ -16,6 +16,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
+import net.minecraft.util.SpawnUtil;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.LightLayer;
@@ -37,6 +38,7 @@ import software.bernie.geckolib3.GeckoLib;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -170,12 +172,14 @@ public class CaveDweller {
                 if (timer.currentVictim != null) {
                     level.getPlayers(this::playCaveSoundToSpelunkers);
                     timer.resetNoiseTimer();
+                    Optional<CaveDwellerEntity> optional = SpawnUtil.trySpawnMob(ModEntityTypes.CAVE_DWELLER.get(), MobSpawnType.TRIGGERED, level, timer.currentVictim.blockPosition(), 40, /* x & z offset */ 35, /* y offset */ 6, SpawnUtil.Strategy.ON_TOP_OF_COLLIDER);
 
-                    CaveDwellerEntity caveDweller = new CaveDwellerEntity(ModEntityTypes.CAVE_DWELLER.get(), level);
-                    caveDweller.setInvisible(true);
-                    caveDweller.setPos(caveDweller.generatePos(timer.currentVictim));
-                    caveDweller.finalizeSpawn(level, level.getCurrentDifficultyAt(timer.currentVictim.blockPosition()), MobSpawnType.TRIGGERED, null, null);
-                    level.addFreshEntity(caveDweller);
+                    if (optional.isPresent()) {
+                        CaveDwellerEntity caveDweller = optional.get();
+                        caveDweller.setInvisible(true);
+                        caveDweller.finalizeSpawn(level, level.getCurrentDifficultyAt(timer.currentVictim.blockPosition()), MobSpawnType.TRIGGERED, null, null);
+                    }
+
                     timer.resetSpawnTimer();
                 }
             }

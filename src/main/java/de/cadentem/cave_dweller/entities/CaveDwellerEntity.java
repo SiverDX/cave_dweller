@@ -153,33 +153,6 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         targetSelector.addGoal(2, new CaveDwellerTargetSeesMeGoal(this));
     }
 
-    public Vec3 generatePos(final Entity player) {
-        Vec3 playerPos = player.position();
-        Random rand = new Random();
-        double randX = rand.nextInt(70) - 35;
-        double randZ = rand.nextInt(70) - 35;
-        double posX = playerPos.x + randX;
-        double posY = playerPos.y + 10.0;
-        double posZ = playerPos.z + randZ;
-
-        for (int runFor = 100; runFor >= 0; --posY) {
-            BlockPos blockPosition = new BlockPos(posX, posY, posZ);
-            BlockPos blockPosition2 = new BlockPos(posX, posY + 1.0, posZ);
-            BlockPos blockPosition3 = new BlockPos(posX, posY + 2.0, posZ);
-            BlockPos blockPosition4 = new BlockPos(posX, posY - 1.0, posZ);
-            --runFor;
-
-            if (!level.getBlockState(blockPosition).getMaterial().blocksMotion()
-                    && !level.getBlockState(blockPosition2).getMaterial().blocksMotion()
-                    && !level.getBlockState(blockPosition3).getMaterial().blocksMotion()
-                    && level.getBlockState(blockPosition4).getMaterial().blocksMotion()) {
-                break;
-            }
-        }
-
-        return new Vec3(posX, posY, posZ);
-    }
-
     public void disappear() {
         playDisappearSound();
         discard();
