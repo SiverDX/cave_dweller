@@ -1,6 +1,13 @@
 package de.cadentem.cave_dweller.config;
 
+import de.cadentem.cave_dweller.datagen.ModBiomeTagsProvider;
+import net.minecraft.core.Holder;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.List;
 
@@ -20,6 +27,8 @@ public class ServerConfig {
     // Leave
     public static ForgeConfigSpec.IntValue TIME_UNTIL_LEAVE;
     public static ForgeConfigSpec.IntValue TIME_UNTIL_LEAVE_CHASE;
+    // Other
+    public static ForgeConfigSpec.DoubleValue SURFACE_TIMER_MULTIPLIER;
 
     // Spawn Conditions
     public static ForgeConfigSpec.DoubleValue SPAWN_CHANCE_PER_TICK;
@@ -29,11 +38,11 @@ public class ServerConfig {
     public static ForgeConfigSpec.IntValue BLOCK_LIGHT_LEVEL;
     public static ForgeConfigSpec.IntValue MAXIMUM_AMOUNT;
     // Dimensions
-    public static ForgeConfigSpec.ConfigValue<List<String>> DIMENSION_WHITELIST;
+    public static ForgeConfigSpec.ConfigValue<List<? extends String>> DIMENSION_WHITELIST;
     // Biomes
     public static ForgeConfigSpec.BooleanValue OVERRIDE_BIOME_DATAPACK_CONFIG;
     public static ForgeConfigSpec.BooleanValue SURFACE_BIOMES_IS_WHITELIST;
-    public static ForgeConfigSpec.ConfigValue<List<String>> SURFACE_BIOMES;
+    public static ForgeConfigSpec.ConfigValue<List<? extends String>> SURFACE_BIOMES;
 
     // Behaviour
     public static ForgeConfigSpec.IntValue SPOTTING_RANGE;
@@ -66,6 +75,7 @@ public class ServerConfig {
         TIME_UNTIL_LEAVE = BUILDER.comment("Time (in seconds) it takes for the Cave Dweller to leave").defineInRange("time_until_leave", 300, 1, 6000);
         TIME_UNTIL_LEAVE_CHASE = BUILDER.comment("Time (in seconds) it takes for the Cave Dweller to leave once a chase begins").defineInRange("time_until_leave_chase", 30, 1, 600);
         BUILDER.pop();
+        SURFACE_TIMER_MULTIPLIER = BUILDER.comment("Modify the timers for the surface (to reduce or increase them), based on the general timer set (e.g. spawn timer of 300 seconds -> 0.3 turns it into 90 seconds and 1.7 turns it into 510 seconds for the surface)").defineInRange("surface_timer_multiplier", 1.0, 0, 5.0);
         BUILDER.pop();
 
         BUILDER.push("Spawn Conditions");
@@ -76,12 +86,12 @@ public class ServerConfig {
         BLOCK_LIGHT_LEVEL = BUILDER.comment("The maximum block light level the Cave Dweller can spawn at").defineInRange("block_light_level", 15, 0, 15);
         MAXIMUM_AMOUNT = BUILDER.comment("The maximum amount of cave dwellers which can exist at the same time").defineInRange("maximum_amoount", 1, 0, 100);
         BUILDER.push("Dimensions");
-        DIMENSION_WHITELIST = BUILDER.comment("The dimensions where the Cave Dweller can spawn in (Whitelist)").define("dimension_whitelist", List.of("minecraft:overworld"), ServerConfig::resourcePredicate);
+        DIMENSION_WHITELIST = BUILDER.comment("The dimensions where the Cave Dweller can spawn in (Whitelist)").defineList("dimension_whitelist", List.of("minecraft:overworld"), ServerConfig::resourcePredicate);
         BUILDER.pop();
         BUILDER.push("Biomes");
         OVERRIDE_BIOME_DATAPACK_CONFIG = BUILDER.comment("If you don't want to create a datapack to configure the biomes").define("override_biome_datapack_config", false);
         SURFACE_BIOMES_IS_WHITELIST = BUILDER.comment("Use the surface biome list either as white- or blacklist").define("surface_biomes_is_whitelist", true);
-        SURFACE_BIOMES = BUILDER.comment("Either white- or blacklist of the surface biomes the Cave Dweller can spawn in (Syntax: modid:biome, e.g. `minecraft:plains`)").define("surface_biomes", List.of(), ServerConfig::resourcePredicate);
+        SURFACE_BIOMES = BUILDER.comment("Either white- or blacklist of the surface biomes the Cave Dweller can spawn in (Syntax: modid:biome, e.g. `minecraft:plains`)").defineList("surface_biomes", List.of(), ServerConfig::resourcePredicate);
         BUILDER.pop();
         BUILDER.pop();
 
@@ -98,7 +108,7 @@ public class ServerConfig {
         MAX_HEALTH = BUILDER.comment("Maximum health").defineInRange("maximum_health", 60.0, 1, 100_000);
         ATTACK_DAMAGE = BUILDER.comment("Attack damage").defineInRange("attack_damage", 6.0, 0, 1_000);
         ATTACK_SPEED = BUILDER.comment("Attack speed").defineInRange("attack_speed", 0.35, 0, 10);
-        MOVEMENT_SPEED = BUILDER.comment("Movement speed").defineInRange("movement_speed", 0.3, 0, 5);
+        MOVEMENT_SPEED = BUILDER.comment("Movement speed").defineInRange("movement_speed", 0.5, 0, 5);
         DEPTH_STRIDER_BONUS = BUILDER.comment("Depth Strider (movement speed in water) bonus").defineInRange("depth_strider_bonus", 1.5, 0, 3);
         BUILDER.pop();
 
@@ -126,6 +136,34 @@ public class ServerConfig {
             }
 
             return true;
+        }
+
+        return false;
+    }
+
+    public static boolean isValidDimension(final String key) {
+        return DIMENSION_WHITELIST.get().contains(key);
+    }
+
+    public static boolean isInValidBiome(final Entity entity) {
+        if (entity == null) {
+            return false;
+        }
+
+        if (entity.getLevel() instanceof ServerLevel serverLevel) {
+            Holder<Biome> biome = serverLevel.getBiome(entity.blockPosition());
+
+            boolean isWhitelist = SURFACE_BIOMES_IS_WHITELIST.get();
+            boolean isBiomeInList;
+
+            if (OVERRIDE_BIOME_DATAPACK_CONFIG.get()) {
+                ResourceLocation resource = ForgeRegistries.BIOMES.getKey(biome.get());
+                isBiomeInList = resource != null && SURFACE_BIOMES.get().contains(resource.toString());
+            } else {
+                isBiomeInList = biome.is(ModBiomeTagsProvider.CAVE_DWELLER_SURFACE_BIOMES);
+            }
+
+            return (/* Whitelist */ isWhitelist && isBiomeInList) || (/* Blacklist */ !isWhitelist && !isBiomeInList);
         }
 
         return false;

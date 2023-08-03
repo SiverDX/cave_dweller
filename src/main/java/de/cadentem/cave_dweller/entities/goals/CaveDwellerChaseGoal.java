@@ -135,6 +135,12 @@ public class CaveDwellerChaseGoal extends Goal {
         Path path = caveDweller.getNavigation().getPath();
 
         if (path == null || path.isDone() || path.getEndNode() == null || path.getEndNode().distanceToSqr(target.blockPosition())  > 0.5) {
+            if (!caveDweller.isCrouching()) {
+                // To avoid detours if it could reach its target faster by just crouching
+                caveDweller.getEntityData().set(CaveDwellerEntity.CROUCHING_ACCESSOR, true);
+                caveDweller.refreshDimensions();
+            }
+
             path = caveDweller.getNavigation().createPath(target, 0);
         }
 
