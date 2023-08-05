@@ -303,7 +303,9 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
 
     @Override
     protected @NotNull PathNavigation createNavigation(@NotNull final Level level) {
-        return new WallClimberNavigation(this, level);
+        WallClimberNavigation navigation = new WallClimberNavigation(this, level);
+        navigation.setMaxVisitedNodesMultiplier(4);
+        return navigation;
     }
 
     private PlayState predicate(final AnimationEvent<CaveDwellerEntity> event) {

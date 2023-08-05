@@ -178,9 +178,9 @@ public class CaveDweller {
                         CaveDwellerEntity caveDweller = optional.get();
                         caveDweller.setInvisible(true);
                         caveDweller.finalizeSpawn(level, level.getCurrentDifficultyAt(timer.currentVictim.blockPosition()), MobSpawnType.TRIGGERED, null, null);
-                    }
 
-                    timer.resetSpawnTimer();
+                        timer.resetSpawnTimer();
+                    }
                 }
             }
         }
