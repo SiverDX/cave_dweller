@@ -71,6 +71,8 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
 
     public Roll currentRoll = Roll.STROLL;
     public boolean isFleeing;
+    /** To be able to create a path while spawning */
+    public boolean hasSpawned;
     public boolean pleaseStopMoving;
     public boolean targetIsLookingAtMe;
 
@@ -156,6 +158,10 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     public void disappear() {
         playDisappearSound();
         discard();
+    }
+
+    public boolean hasSpawned() {
+        return hasSpawned;
     }
 
     @Override
@@ -313,10 +319,10 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         AnimationController<CaveDwellerEntity> controller = event.getController();
 
         // TODO :: Climbing animation
-        if (entityData.get(CRAWLING_ACCESSOR)) {
+        if (level.getBlockState(blockPosition().above()).getMaterial().isSolidBlocking()) {
             // Crawling
             builder.addAnimation(CRAWL.animationName, CRAWL.loopType);
-        } else if (entityData.get(CROUCHING_ACCESSOR)) {
+        } else if (level.getBlockState(blockPosition().above(2)).getMaterial().isSolidBlocking()) {
             // Crouching
             if (event.isMoving()) {
                 builder.addAnimation(CROUCH_RUN.animationName, CROUCH_RUN.loopType);

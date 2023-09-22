@@ -78,4 +78,10 @@ public class Timer {
         currentSpawn = 0;
         targetSpawn = spawnTimer;
     }
+
+    @Override
+    public String toString() {
+        String name = currentVictim != null ? currentVictim.getName().getString() : "NONE";
+        return name + " | " + currentSpawn + "/" + targetSpawn + " | " + currentNoise + "/" + targetNoise;
+    }
 }
