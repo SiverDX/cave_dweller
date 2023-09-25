@@ -38,7 +38,7 @@ public class CaveDwellerChaseGoal extends Goal {
             return false;
         }
 
-        if (!caveDweller.targetIsLookingAtMe) {
+        if (!caveDweller.targetIsFacingMe) {
             return false;
         }
 
@@ -68,9 +68,6 @@ public class CaveDwellerChaseGoal extends Goal {
             return true;
         }
 
-        // Try path with smaller size
-        caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, true);
-        caveDweller.refreshDimensions();
         path = caveDweller.getNavigation().createPath(target, 0);
 
         return path != null;
@@ -122,7 +119,7 @@ public class CaveDwellerChaseGoal extends Goal {
 
     @Override
     public void tick() {
-        if (ticksUntilLeave <= 0 && !caveDweller.targetIsLookingAtMe) {
+        if (ticksUntilLeave <= 0 && !caveDweller.targetIsFacingMe) {
             caveDweller.disappear();
         }
 
@@ -133,56 +130,24 @@ public class CaveDwellerChaseGoal extends Goal {
         }
 
         Path path = caveDweller.getNavigation().getPath();
+        fixPath(path);
 
-        if (path == null || path.isDone() || path.getEndNode() == null || path.getEndNode().distanceToSqr(target.blockPosition())  > 0.5) {
-            if (!caveDweller.isCrouching()) {
-                // To avoid detours if it could reach its target faster by just crouching
-                caveDweller.getEntityData().set(CaveDwellerEntity.CROUCHING_ACCESSOR, true);
-                caveDweller.refreshDimensions();
-            }
+        boolean targetMoved = path != null && !path.isDone() && path.getNextNode().distanceTo(target.blockPosition()) > 1.5;
 
+        if (path == null || targetMoved || path.isDone() && !shouldClimb(path) || caveDweller.getNavigation().shouldRecomputePath(target.blockPosition()) && caveDweller.tickCount % 20 == 0) {
             path = caveDweller.getNavigation().createPath(target, 0);
-        }
-
-        boolean isCrawling = false;
-        boolean shouldClimb = target.getY() > caveDweller.getY(); // TODO :: Add `path != null` and a try-climb logic if it does not get closer to target within x seconds?
-
-        // When the node count is 1 it usually means that no actual path can be found (and the node point is just the target location)
-        if (!shouldClimb && (caveDweller.distanceToSqr(target) > 0.3 && (path == null || path.isDone() || path.getNodeCount() == 1))) {
-            // No path could be found, try with smaller size
-            isCrawling = true;
-            caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, true);
-            caveDweller.refreshDimensions();
-            path = caveDweller.getNavigation().createPath(target, 0);
+            fixPath(path);
         }
 
         if (path != null && !path.isDone()) {
             if (caveDweller.hasLineOfSight(target)) {
                 caveDweller.playChaseSound();
             }
-
-            boolean isAboveSolid = caveDweller.level().getBlockState(caveDweller.blockPosition().above()).isSolid();
-            boolean isNextAboveSolid = caveDweller.level().getBlockState(path.getNextNodePos().above()).isSolid();
-
-            /* [x = blocks | o = cave dweller]
-             xxxx
-              o x
-            x o x
-            xxxxx
-            */
-            boolean isFacingSolid = caveDweller.level().getBlockState(caveDweller.blockPosition().relative(caveDweller.getDirection())).isSolid();
-            boolean isFacingAboveSolid = caveDweller.level().getBlockState(caveDweller.blockPosition().relative(caveDweller.getDirection()).above()).isSolid();
-            boolean extraCheck = isFacingSolid && !isFacingAboveSolid;
-
-            isCrawling = isAboveSolid || isNextAboveSolid || (caveDweller.getEntityData().get(CaveDwellerEntity.CROUCHING_ACCESSOR) && extraCheck);
-            caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, isCrawling);
-            caveDweller.refreshDimensions();
         }
 
-        double speedModifier = (0.85 / maxSpeedReached) * speedUp; // FIXME :: Makes animation / movement wonky
-        caveDweller.getNavigation().moveTo(path, isCrawling ? 0.3 : 0.85);
+        caveDweller.getNavigation().moveTo(path, caveDweller.getSpeedModifier());
 
-        if (!isCrawling) {
+        if (!caveDweller.isCrawling()) {
             if (caveDweller.isAggressive()) {
                 caveDweller.getLookControl().setLookAt(target, 90.0F, 90.0F);
             } else {
@@ -198,6 +163,29 @@ public class CaveDwellerChaseGoal extends Goal {
 
         if (speedUp < maxSpeedReached) {
             speedUp++;
+        }
+    }
+
+    private boolean shouldClimb(final Path path) {
+        if (caveDweller.getTarget() == null) {
+            return false;
+        }
+
+        // TODO :: Is it safe to check coordinates of the node instead of the target?
+        return path != null && path.getNodeCount() == 1 && caveDweller.getTarget().blockPosition().getY() > caveDweller.blockPosition().getY() + caveDweller.getStepHeight();
+    }
+
+    private void fixPath(final Path path) {
+        LivingEntity target = caveDweller.getTarget();
+
+        if (target == null) {
+            return;
+        }
+
+        if (shouldClimb(path)) {
+            if (path.getNode(0).distanceTo(caveDweller.getTarget().blockPosition()) > 0.1) {
+                path.replaceNode(0, path.getNode(0).cloneAndMove(target.blockPosition().getX(), target.blockPosition().getY(), target.blockPosition().getZ()));
+            }
         }
     }
 

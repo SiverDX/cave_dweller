@@ -22,24 +22,30 @@ public class ForgeEvents {
         LivingEntity entity = event.getEntity();
 
         if (entity instanceof CaveDwellerEntity caveDweller) {
-            if (event.getSource().is(DamageTypes.DROWN) || event.getSource().is(DamageTypes.FELL_OUT_OF_WORLD) || event.getSource().is(DamageTypes.IN_WALL)) {
-                HIT_COUNTER.merge(caveDweller.getId(), 1, Integer::sum);
+            boolean skipDamage = event.getSource().is(DamageTypes.DROWN) || event.getSource().is(DamageTypes.FELL_OUT_OF_WORLD) || event.getSource().is(DamageTypes.IN_WALL);
+            boolean increaseCounter = event.getSource().is(DamageTypes.DROWN) || event.getSource().is(DamageTypes.FELL_OUT_OF_WORLD);
 
-                if (HIT_COUNTER.get(caveDweller.getId()) > 5) {
-                    HIT_COUNTER.remove(caveDweller.getId());
+            if (skipDamage) {
+                if (increaseCounter && !caveDweller.level().isClientSide()) {
+                    HIT_COUNTER.merge(caveDweller.getId(), 1, Integer::sum);
 
-                    boolean couldTeleport = caveDweller.teleportToTarget();
+                    if (HIT_COUNTER.get(caveDweller.getId()) > 5) {
+                        HIT_COUNTER.remove(caveDweller.getId());
 
-                    if (!couldTeleport) {
-                        String key = caveDweller.level().dimension().location().toString();
+                        boolean couldTeleport = caveDweller.teleportToTarget();
+                        caveDweller.hurtMarked = true;
 
-                        if (ServerConfig.isValidDimension(key)) {
-                            int spawnDelta = (int) (ServerConfig.CAN_SPAWN_MIN.get() * 0.3);
-                            int noiseDelta = (int) (ServerConfig.RESET_NOISE_MIN.get() * 0.3);
-                            CaveDweller.speedUpTimers(key, spawnDelta, noiseDelta);
+                        if (!couldTeleport) {
+                            String key = caveDweller.level().dimension().location().toString();
+
+                            if (ServerConfig.isValidDimension(key)) {
+                                int spawnDelta = (int) (ServerConfig.CAN_SPAWN_MIN.get() * 0.3);
+                                int noiseDelta = (int) (ServerConfig.RESET_NOISE_MIN.get() * 0.3);
+                                CaveDweller.speedUpTimers(key, spawnDelta, noiseDelta);
+                            }
+
+                            caveDweller.disappear();
                         }
-
-                        caveDweller.disappear();
                     }
                 }
 

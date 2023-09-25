@@ -16,6 +16,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
+import net.minecraft.util.SpawnUtil;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.Level;
@@ -38,6 +39,7 @@ import software.bernie.geckolib.GeckoLib;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -108,6 +110,11 @@ public class CaveDweller {
                 }
             }
 
+            // Check every 5 minutes if any timers are present
+            if (TIMERS.isEmpty() && event.getServer().getTickCount() % (20 * 60 * 5) == 0) {
+                CaveDweller.LOG.debug("There are currently no timers present - are the dimensions properly configured?");
+            }
+
             RELOAD_ALL = false;
             RELOAD_MISSING = false;
         } else if (RELOAD_MISSING) {
@@ -172,13 +179,18 @@ public class CaveDweller {
                 if (timer.currentVictim != null) {
                     level.getPlayers(this::playCaveSoundToSpelunkers);
                     timer.resetNoiseTimer();
+                    Optional<CaveDwellerEntity> optionalEntity = Utils.trySpawnMob(timer.currentVictim, ModEntityTypes.CAVE_DWELLER.get(), MobSpawnType.TRIGGERED, level, timer.currentVictim.blockPosition(), 40, /* x & z offset */ 35, /* y offset */ 6, SpawnUtil.Strategy.ON_TOP_OF_COLLIDER);
 
-                    CaveDwellerEntity caveDweller = new CaveDwellerEntity(ModEntityTypes.CAVE_DWELLER.get(), level);
-                    caveDweller.setInvisible(true);
-                    caveDweller.setPos(caveDweller.generatePos(timer.currentVictim));
-                    caveDweller.finalizeSpawn(level, level.getCurrentDifficultyAt(timer.currentVictim.blockPosition()), MobSpawnType.TRIGGERED, null, null);
-                    level.addFreshEntity(caveDweller);
-                    timer.resetSpawnTimer();
+                    if (optionalEntity.isPresent()) {
+                        CaveDwellerEntity caveDweller = optionalEntity.get();
+                        caveDweller.setInvisible(true);
+                        caveDweller.hasSpawned = true;
+
+                        timer.resetSpawnTimer();
+                    } else {
+                        // Spawn failed - potentially try a different player
+                        timer.currentVictim = null;
+                    }
                 }
             }
         }
@@ -248,7 +260,11 @@ public class CaveDweller {
 
     public static void speedUpTimers(final String key, int spawnDelta, int noiseDelta) {
         Timer timer = TIMERS.get(key);
-        timer.currentSpawn += spawnDelta;
-        timer.currentNoise += noiseDelta;
+        CaveDweller.LOG.debug("Speeding up timers for the dimension [{}], timer: [{}]", key, timer);
+
+        if (timer != null) {
+            timer.currentSpawn += spawnDelta;
+            timer.currentNoise += noiseDelta;
+        }
     }
 }
