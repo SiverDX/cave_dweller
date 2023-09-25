@@ -103,7 +103,7 @@ public class Utils {
 
                 if (entity instanceof CaveDwellerEntity) {
                     if (entity.checkSpawnRules(level, spawnType) && entity.checkSpawnObstruction(level)) {
-                        boolean isValidSpawn = entity.level().getNearestPlayer(entity, 16) == null;
+                        boolean isValidSpawn = entity.level().getNearestPlayer(entity, ServerConfig.SPAWN_DISTANCE.get()) == null;
 
                         if (isValidSpawn && ServerConfig.CHECK_PATH_TO_SPAWN.get()) {
                             Path path = entity.getNavigation().createPath(currentVictim, 0);
