@@ -12,14 +12,3 @@ Requires GeckoLib: https://www.curseforge.com/minecraft/mc-mods/geckolib/files?v
 Recommend using https://www.curseforge.com/minecraft/texture-packs/creepier-cave-dwellers
 * You will need to rename `assets\cavenoise` to `assets\cave_dweller`
 * Delete everything except the `geo` and `textures` directories
-
-# To Consider
-
-## Bugs
-* Climbing and Crawling don't like each other
-* Crawling animation (need to split between crawling and crawling finished)
-
-## Ideas
-* Add chance to flee when its on fire
-* Extinguish light sources in a certain radius around the mob
-* Trigger chase as retaliation

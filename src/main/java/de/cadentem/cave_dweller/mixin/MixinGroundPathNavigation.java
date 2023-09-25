@@ -23,7 +23,7 @@ public abstract class MixinGroundPathNavigation extends PathNavigation {
     @Inject(method = "canUpdatePath", at = @At("RETURN"), cancellable = true)
     public void canUpdateWhenClimbing(final CallbackInfoReturnable<Boolean> cir) {
         if (mob instanceof CaveDwellerEntity caveDweller) {
-            if (!cir.getReturnValue() && caveDweller.getEntityData().get(CaveDwellerEntity.CRAWLING_ACCESSOR)) {
+            if (!cir.getReturnValue() && (!caveDweller.hasSpawned() || caveDweller.getEntityData().get(CaveDwellerEntity.CRAWLING_ACCESSOR))) {
                 cir.setReturnValue(true);
             }
         }

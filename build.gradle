@@ -93,18 +93,24 @@ dependencies {
     implementation fg.deobf("software.bernie.geckolib:geckolib-forge-${geckolib_mc_version}:${geckolib_version}")
 
     // Debug
-    implementation fg.deobf("curse.maven:mob-entity-path-visualizer-590716:4063117")
+    implementation fg.deobf("curse.maven:mob-entity-path-visualizer-590716:3882633")
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 
 tasks.named('processResources', ProcessResources).configure {
     var replaceProperties = [
-            minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
-            forge_version: forge_version, forge_version_range: forge_version_range,
+            minecraft_version: minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            forge_version: forge_version,
+            forge_version_range: forge_version_range,
             loader_version_range: loader_version_range,
-            mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
-            mod_authors: mod_authors, mod_description: mod_description,
+            mod_id: mod_id,
+            mod_name: mod_name,
+            mod_license: mod_license,
+            mod_version: mod_version,
+            mod_authors: mod_authors,
+            mod_description: mod_description,
             geckolib_version_range: geckolib_version_range
     ]
 

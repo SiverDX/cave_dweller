@@ -26,6 +26,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.navigation.WallClimberNavigation;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
@@ -67,17 +68,15 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     public static final EntityDataAccessor<Boolean> SPOTTED_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
     public static final EntityDataAccessor<Boolean> CLIMBING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
 
-    private final float twoBlockSpaceCooldown;
-
     public Roll currentRoll = Roll.STROLL;
     public boolean isFleeing;
+    /** To be able to create a path while spawning */
+    public boolean hasSpawned;
     public boolean pleaseStopMoving;
-    public boolean targetIsLookingAtMe;
+    public boolean targetIsFacingMe;
 
-    private float twoBlockSpaceTimer;
     private int ticksTillRemove;
     private int chaseSoundClock;
-    private boolean inTwoBlockSpace;
     private boolean alreadyPlayedFleeSound;
     private boolean alreadyPlayedSpottedSound;
     private boolean startedPlayingChaseSound;
@@ -86,7 +85,6 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     public CaveDwellerEntity(final EntityType<? extends CaveDwellerEntity> entityType, final Level level) {
         super(entityType, level);
         this.refreshDimensions();
-        this.twoBlockSpaceCooldown = 5.0F;
         this.ticksTillRemove = Utils.secondsToTicks(ServerConfig.TIME_UNTIL_LEAVE.get());
     }
 
@@ -142,47 +140,24 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     @Override
     protected void registerGoals() {
         goalSelector.addGoal(1, new CaveDwellerChaseGoal(this, true));
-        goalSelector.addGoal(1, new CaveDwellerFleeGoal(this, 20.0F, 1.0));
+        goalSelector.addGoal(1, new CaveDwellerFleeGoal(this, 20, 1));
         goalSelector.addGoal(2, new CaveDwellerBreakInvisGoal(this));
         goalSelector.addGoal(2, new CaveDwellerStareGoal(this));
         if (ServerConfig.CAN_BREAK_DOOR.get()) { // TODO :: Remove for already spawned entities on config change?
             goalSelector.addGoal(2, new CaveDwellerBreakDoorGoal(this, difficulty -> true));
         }
-        goalSelector.addGoal(3, new CaveDwellerStrollGoal(this, 0.7));
-        targetSelector.addGoal(1, new CaveDwellerTargetTooCloseGoal(this, 12.0F));
+        goalSelector.addGoal(3, new CaveDwellerStrollGoal(this, 0.35));
+        targetSelector.addGoal(1, new CaveDwellerTargetTooCloseGoal(this, 12));
         targetSelector.addGoal(2, new CaveDwellerTargetSeesMeGoal(this));
-    }
-
-    public Vec3 generatePos(final Entity player) {
-        Vec3 playerPos = player.position();
-        Random rand = new Random();
-        double randX = rand.nextInt(70) - 35;
-        double randZ = rand.nextInt(70) - 35;
-        double posX = playerPos.x + randX;
-        double posY = playerPos.y + 10.0;
-        double posZ = playerPos.z + randZ;
-
-        for (int runFor = 100; runFor >= 0; --posY) {
-            BlockPos blockPosition = new BlockPos(posX, posY, posZ);
-            BlockPos blockPosition2 = new BlockPos(posX, posY + 1.0, posZ);
-            BlockPos blockPosition3 = new BlockPos(posX, posY + 2.0, posZ);
-            BlockPos blockPosition4 = new BlockPos(posX, posY - 1.0, posZ);
-            --runFor;
-
-            if (!level.getBlockState(blockPosition).getMaterial().blocksMotion()
-                    && !level.getBlockState(blockPosition2).getMaterial().blocksMotion()
-                    && !level.getBlockState(blockPosition3).getMaterial().blocksMotion()
-                    && level.getBlockState(blockPosition4).getMaterial().blocksMotion()) {
-                break;
-            }
-        }
-
-        return new Vec3(posX, posY, posZ);
     }
 
     public void disappear() {
         playDisappearSound();
         discard();
+    }
+
+    public boolean hasSpawned() {
+        return hasSpawned;
     }
 
     @Override
@@ -218,46 +193,32 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         }
 
         if (getTarget() != null) {
-            targetIsLookingAtMe = isLookingAtMe(getTarget());
+            targetIsFacingMe = isLookingAtMe(getTarget(), false);
         }
 
-        boolean shouldCrouch = false;
+        boolean isAboveSolid = level.getBlockState(blockPosition().above()).getMaterial().isSolid();
+        boolean isTwoAboveSolid = level.getBlockState(blockPosition().above(2)).getMaterial().isSolid();
 
-        if (!getEntityData().get(CRAWLING_ACCESSOR)) {
-            boolean isTwoAboveSolid = level.getBlockState(blockPosition().above().above()).getMaterial().isSolid();
+        /* [- : blocks | o : cave dweller]
+        To handle these two variants:
+            o
+        ----o       ----o
+            o           o
+        -----       ----o
+        */
+        Vec3i offset = new Vec3i(getDirection().getStepX(), getDirection().getStepY(), getDirection().getStepZ());
+        boolean isFacingSolid = level.getBlockState(blockPosition().relative(getDirection())).getMaterial().isSolid();
 
-            /* [x : blocks | o : cave dweller]
-            To handle these two variants:
-                o
-            xxxxo       xxxxo
-                o           o
-            xxxxx       xxxxo
-            */
-            Vec3i offset = new Vec3i(getDirection().getStepX(), getDirection().getStepY(), getDirection().getStepZ());
-            boolean isFacingSolid = level.getBlockState(blockPosition().relative(getDirection())).getMaterial().isSolid();
-
-            if (isFacingSolid) {
-                offset = offset.offset(0, 1, 0);
-            }
-
-            boolean isOffsetFacingSolid = level.getBlockState(blockPosition().offset(offset)).getMaterial().isSolid();
-            boolean isOffsetFacingTwoAboveSolid = level.getBlockState(blockPosition().offset(offset).above().above()).getMaterial().isSolid();
-            boolean isOffsetFacingAboveSolid = level.getBlockState(blockPosition().relative(getDirection()).above()).getMaterial().isSolid();
-
-            shouldCrouch = isTwoAboveSolid || (!isOffsetFacingSolid && !isOffsetFacingAboveSolid && isOffsetFacingTwoAboveSolid);
+        if (isFacingSolid) {
+            offset = offset.offset(0, 1, 0);
         }
 
-        if (shouldCrouch) {
-            twoBlockSpaceTimer = twoBlockSpaceCooldown;
-            inTwoBlockSpace = true;
-        } else {
-            // Don't immediately stop crouching
-            --twoBlockSpaceTimer;
+        boolean isOffsetFacingSolid = level.getBlockState(blockPosition().offset(offset)).getMaterial().isSolid();
+        boolean isOffsetFacingTwoAboveSolid = level.getBlockState(blockPosition().offset(offset).above(2)).getMaterial().isSolid();
+        boolean isOffsetFacingAboveSolid = level.getBlockState(blockPosition().relative(getDirection()).above()).getMaterial().isSolid();
 
-            if (twoBlockSpaceTimer <= 0.0F) {
-                inTwoBlockSpace = false;
-            }
-        }
+        boolean shouldCrouch = isTwoAboveSolid || (!isOffsetFacingSolid && !isOffsetFacingAboveSolid && isOffsetFacingTwoAboveSolid);
+        boolean shouldCrawl = isAboveSolid || (!isOffsetFacingSolid && isOffsetFacingAboveSolid);
 
         if (level instanceof ServerLevel) {
             if (isAggressive() || isFleeing) {
@@ -265,7 +226,8 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             }
 
             setClimbing(horizontalCollision);
-            entityData.set(CROUCHING_ACCESSOR, inTwoBlockSpace);
+            entityData.set(CROUCHING_ACCESSOR, shouldCrouch);
+            setCrawling(shouldCrawl);
         }
 
         if (entityData.get(SPOTTED_ACCESSOR)) {
@@ -273,8 +235,13 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         }
 
         refreshDimensions();
+        getNavigation().setSpeedModifier(getSpeedModifier());
 
         super.tick();
+    }
+
+    public double getSpeedModifier() {
+        return isCrawling() ? 0.35 : isCrouching() ? 0.6 : 0.85;
     }
 
     @Override
@@ -317,8 +284,9 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             return false;
         }
 
-        if (getTarget() != null /*&& getTarget().getPosition(1).y > getY()*/) {
-            return entityData.get(CLIMBING_ACCESSOR);
+        if (getTarget() != null) {
+            // TODO :: Not sure if the initial two checks are needed
+            return !isCrawling() && !isCrouching() && entityData.get(CLIMBING_ACCESSOR);
         }
 
         return false;
@@ -330,7 +298,9 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
 
     @Override
     protected @NotNull PathNavigation createNavigation(@NotNull final Level level) {
-        return new WallClimberNavigation(this, level);
+        WallClimberNavigation navigation = new WallClimberNavigation(this, level);
+        navigation.setMaxVisitedNodesMultiplier(4);
+        return navigation;
     }
 
     private PlayState predicate(final AnimationEvent<CaveDwellerEntity> event) {
@@ -338,10 +308,10 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         AnimationController<CaveDwellerEntity> controller = event.getController();
 
         // TODO :: Climbing animation
-        if (entityData.get(CRAWLING_ACCESSOR)) {
+        if (level.getBlockState(blockPosition().above()).getMaterial().isSolidBlocking()) {
             // Crawling
             builder.addAnimation(CRAWL.animationName, CRAWL.loopType);
-        } else if (entityData.get(CROUCHING_ACCESSOR)) {
+        } else if (level.getBlockState(blockPosition().above(2)).getMaterial().isSolidBlocking()) {
             // Crouching
             if (event.isMoving()) {
                 builder.addAnimation(CROUCH_RUN.animationName, CROUCH_RUN.loopType);
@@ -486,6 +456,27 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         playEntitySound(soundevent, 2.0F, 1.0F);
     }
 
+    public void setCrawling(boolean shouldCrawl) {
+        if (shouldCrawl) {
+            getEntityData().set(CROUCHING_ACCESSOR, false);
+        }
+
+        getEntityData().set(CRAWLING_ACCESSOR, shouldCrawl);
+        refreshDimensions();
+    }
+
+    public boolean isCrawling() {
+        return entityData.get(CRAWLING_ACCESSOR);
+    }
+
+
+    /* TODO :: Check
+    @Override
+    public boolean isVisuallyCrawling() {
+        return super.isVisuallyCrawling();
+    }
+    */
+
     @Override
     protected void tickDeath() {
         super.tickDeath();
@@ -496,7 +487,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         }
     }
 
-    public boolean isLookingAtMe(final Entity target) {
+    public boolean isLookingAtMe(final Entity target, boolean directlyLooking) {
         if (!Utils.isValidPlayer(target)) {
             return false;
         }
@@ -505,17 +496,16 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             return false;
         }
 
-        return isLooking(target);
-    }
-
-    private boolean isLooking(final Entity target) {
         Vec3 viewVector = target.getViewVector(1.0F).normalize();
         Vec3 difference = new Vec3(getX() - target.getX(), getEyeY() - target.getEyeY(), getZ() - target.getZ());
         difference = difference.normalize();
         double dot = viewVector.dot(difference);
 
-        // FIXME :: The line of sight method is very unreliable
-        return dot > 0 /*&& target.hasLineOfSight(this)*/;
+        if (directlyLooking && target instanceof Player player) {
+            return dot > 0.99 && player.hasLineOfSight(this);
+        }
+
+        return dot > 0.3;
     }
 
     public boolean teleportToTarget() {

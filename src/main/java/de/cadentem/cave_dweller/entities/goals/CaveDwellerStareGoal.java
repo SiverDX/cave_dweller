@@ -13,9 +13,12 @@ public class CaveDwellerStareGoal extends Goal {
 
     private boolean wasNotLookingPreviously;
     private int lookedAtCount;
+    private final int lookedAtMax;
 
     public CaveDwellerStareGoal(final CaveDwellerEntity caveDweller) {
         this.caveDweller = caveDweller;
+        // nextIntBetweenInclusive
+        lookedAtMax = caveDweller.getRandom().nextInt(15 - 8 + 1) + 8;
     }
 
     @Override
@@ -63,13 +66,13 @@ public class CaveDwellerStareGoal extends Goal {
             return;
         }
 
-        boolean actuallyLooking = caveDweller.targetIsLookingAtMe && target.hasLineOfSight(caveDweller);
+        boolean actuallyLooking = caveDweller.targetIsFacingMe && target.hasLineOfSight(caveDweller);
 
         if (wasNotLookingPreviously && actuallyLooking) {
             lookedAtCount++;
         }
 
-        if (lookedAtCount > 10 && actuallyLooking) {
+        if (lookedAtCount > lookedAtMax && !actuallyLooking) {
             if (caveDweller.getRandom().nextDouble() < 0.1) {
                 caveDweller.disappear();
             } else if (caveDweller.getRandom().nextDouble() < 0.3) {

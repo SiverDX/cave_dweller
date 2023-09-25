@@ -37,6 +37,8 @@ public class ServerConfig {
     public static ForgeConfigSpec.IntValue SKY_LIGHT_LEVEL;
     public static ForgeConfigSpec.IntValue BLOCK_LIGHT_LEVEL;
     public static ForgeConfigSpec.IntValue MAXIMUM_AMOUNT;
+    public static ForgeConfigSpec.IntValue SPAWN_DISTANCE;
+    public static ForgeConfigSpec.BooleanValue CHECK_PATH_TO_SPAWN;
     // Dimensions
     public static ForgeConfigSpec.ConfigValue<List<? extends String>> DIMENSION_WHITELIST;
     // Biomes
@@ -84,7 +86,9 @@ public class ServerConfig {
         ALLOW_SURFACE_SPAWN = BUILDER.comment("Whether the Cave Dweller can spawn on the surface or not").define("allow_surface_spawn", false);
         SKY_LIGHT_LEVEL = BUILDER.comment("The maximum sky light level the Cave Dweller can spawn at").defineInRange("sky_light_level", 8, 0, 15);
         BLOCK_LIGHT_LEVEL = BUILDER.comment("The maximum block light level the Cave Dweller can spawn at").defineInRange("block_light_level", 15, 0, 15);
-        MAXIMUM_AMOUNT = BUILDER.comment("The maximum amount of cave dwellers which can exist at the same time").defineInRange("maximum_amoount", 1, 0, 100);
+        MAXIMUM_AMOUNT = BUILDER.comment("The maximum amount of cave dwellers which can exist at the same time").defineInRange("maximum_amount", 5, 0, 100);
+        SPAWN_DISTANCE = BUILDER.comment("How close (in blocks) the cave dweller is allowed to spawn to its victim").defineInRange("spawn_distance", 16, 0, 64);
+        CHECK_PATH_TO_SPAWN = BUILDER.comment("If set to true the cave dweller will try to find a spawn position with a possible path to the player").define("check_path_to_spawn", true);
         BUILDER.push("Dimensions");
         DIMENSION_WHITELIST = BUILDER.comment("The dimensions where the Cave Dweller can spawn in (Whitelist)").defineList("dimension_whitelist", List.of("minecraft:overworld"), ServerConfig::resourcePredicate);
         BUILDER.pop();

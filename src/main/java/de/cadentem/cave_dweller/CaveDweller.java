@@ -37,6 +37,7 @@ import software.bernie.geckolib3.GeckoLib;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -49,6 +50,7 @@ public class CaveDweller {
     private static final HashMap<String, Timer> TIMERS = new HashMap<>();
 
     public static boolean RELOAD_ALL = false;
+    public static boolean RELOAD_MISSING = false;
 
     public CaveDweller() {
         GeckoLib.initialize();
@@ -148,13 +150,18 @@ public class CaveDweller {
                 if (timer.currentVictim != null) {
                     level.getPlayers(this::playCaveSoundToSpelunkers);
                     timer.resetNoiseTimer();
+                    Optional<CaveDwellerEntity> optionalEntity = Utils.trySpawnMob(timer.currentVictim, ModEntityTypes.CAVE_DWELLER.get(), MobSpawnType.TRIGGERED, level, timer.currentVictim.blockPosition(), 40, /* x & z offset */ 35, /* y offset */ 6);
 
-                    CaveDwellerEntity caveDweller = new CaveDwellerEntity(ModEntityTypes.CAVE_DWELLER.get(), level);
-                    caveDweller.setInvisible(true);
-                    caveDweller.setPos(caveDweller.generatePos(timer.currentVictim));
-                    caveDweller.finalizeSpawn(level, level.getCurrentDifficultyAt(timer.currentVictim.blockPosition()), MobSpawnType.TRIGGERED, null, null);
-                    level.addFreshEntity(caveDweller);
-                    timer.resetSpawnTimer();
+                    if (optionalEntity.isPresent()) {
+                        CaveDwellerEntity caveDweller = optionalEntity.get();
+                        caveDweller.setInvisible(true);
+                        caveDweller.hasSpawned = true;
+
+                        timer.resetSpawnTimer();
+                    } else {
+                        // Spawn failed - potentially try a different player
+                        timer.currentVictim = null;
+                    }
                 }
             }
         }
@@ -224,7 +231,11 @@ public class CaveDweller {
 
     public static void speedUpTimers(final String key, int spawnDelta, int noiseDelta) {
         Timer timer = TIMERS.get(key);
-        timer.currentSpawn += spawnDelta;
-        timer.currentNoise += noiseDelta;
+        CaveDweller.LOG.debug("Speeding up timers for the dimension [{}], timer: [{}]", key, timer);
+
+        if (timer != null) {
+            timer.currentSpawn += spawnDelta;
+            timer.currentNoise += noiseDelta;
+        }
     }
 }

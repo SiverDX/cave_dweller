@@ -5,7 +5,8 @@
   "refmap": "cave_dweller.refmap.json",
   "mixins": [
     "MixinLivingEntity",
-    "MixinGroundPathNavigation"
+    "MixinGroundPathNavigation",
+    "MixinPathNavigation"
   ],
   "client": [
   ]
