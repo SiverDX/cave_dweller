@@ -196,16 +196,17 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             targetIsFacingMe = isLookingAtMe(getTarget(), false);
         }
 
+        /* [- : blocks | o : cave dweller]
+            To handle these variants:
+                o                   -----
+            ----o       ----o           o
+                o           o           o
+            -----       ----o       ----o
+        */
         boolean isAboveSolid = level.getBlockState(blockPosition().above()).getMaterial().isSolid();
         boolean isTwoAboveSolid = level.getBlockState(blockPosition().above(2)).getMaterial().isSolid();
+        boolean isThreeAboveSolid = level.getBlockState(blockPosition().above(3)).getMaterial().isSolid();
 
-        /* [- : blocks | o : cave dweller]
-        To handle these two variants:
-            o
-        ----o       ----o
-            o           o
-        -----       ----o
-        */
         Vec3i offset = new Vec3i(getDirection().getStepX(), getDirection().getStepY(), getDirection().getStepZ());
         boolean isFacingSolid = level.getBlockState(blockPosition().relative(getDirection())).getMaterial().isSolid();
 
@@ -217,7 +218,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         boolean isOffsetFacingTwoAboveSolid = level.getBlockState(blockPosition().offset(offset).above(2)).getMaterial().isSolid();
         boolean isOffsetFacingAboveSolid = level.getBlockState(blockPosition().relative(getDirection()).above()).getMaterial().isSolid();
 
-        boolean shouldCrouch = isTwoAboveSolid || (!isOffsetFacingSolid && !isOffsetFacingAboveSolid && isOffsetFacingTwoAboveSolid);
+        boolean shouldCrouch = isTwoAboveSolid || (!isOffsetFacingSolid && !isOffsetFacingAboveSolid && (isOffsetFacingTwoAboveSolid || isFacingSolid && isThreeAboveSolid)) ;
         boolean shouldCrawl = isAboveSolid || (!isOffsetFacingSolid && isOffsetFacingAboveSolid);
 
         if (level instanceof ServerLevel) {
