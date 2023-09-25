@@ -132,7 +132,8 @@ public class CaveDwellerChaseGoal extends Goal {
         Path path = caveDweller.getNavigation().getPath();
         fixPath(path);
 
-        boolean targetMoved = path != null && !path.isDone() && path.getNextNode().distanceTo(target.blockPosition()) > 1.5;
+        // Create a new path when the target moves away too far from the initial goal
+        boolean targetMoved = path != null && (path.getEndNode() != null && path.getEndNode().distanceTo(target.blockPosition()) > 2);
 
         if (path == null || targetMoved || path.isDone() && !shouldClimb(path) || caveDweller.getNavigation().shouldRecomputePath(target.blockPosition()) && caveDweller.tickCount % 20 == 0) {
             path = caveDweller.getNavigation().createPath(target, 0);
@@ -166,15 +167,10 @@ public class CaveDwellerChaseGoal extends Goal {
         }
     }
 
-    private boolean shouldClimb(final Path path) {
-        if (caveDweller.getTarget() == null) {
-            return false;
-        }
-
-        // TODO :: Is it safe to check coordinates of the node instead of the target?
-        return path != null && path.getNodeCount() == 1 && caveDweller.getTarget().blockPosition().getY() > caveDweller.blockPosition().getY() + caveDweller.getStepHeight();
-    }
-
+    /**
+     * Sometimes the path only contains 1 node but that node is not the player position
+     * Changing that node to the player position helps when the Cave Dweller should climb
+     */
     private void fixPath(final Path path) {
         LivingEntity target = caveDweller.getTarget();
 
@@ -187,6 +183,15 @@ public class CaveDwellerChaseGoal extends Goal {
                 path.replaceNode(0, path.getNode(0).cloneAndMove(target.blockPosition().getX(), target.blockPosition().getY(), target.blockPosition().getZ()));
             }
         }
+    }
+
+    private boolean shouldClimb(final Path path) {
+        if (caveDweller.getTarget() == null) {
+            return false;
+        }
+
+        // TODO :: Is it safe to check coordinates of the node instead of the target?
+        return path != null && path.getNodeCount() == 1 && caveDweller.getTarget().blockPosition().getY() > caveDweller.blockPosition().getY() + caveDweller.getStepHeight();
     }
 
     private void checkAndPerformAttack(final LivingEntity target, double distanceToTarget) {

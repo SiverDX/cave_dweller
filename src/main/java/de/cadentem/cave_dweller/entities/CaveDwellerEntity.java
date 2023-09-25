@@ -195,16 +195,17 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
             targetIsFacingMe = isLookingAtMe(getTarget(), false);
         }
 
+        /* [- : blocks | o : cave dweller]
+            To handle these variants:
+                o                   -----
+            ----o       ----o           o
+                o           o           o
+            -----       ----o       ----o
+        */
         boolean isAboveSolid = level().getBlockState(blockPosition().above()).isSolid();
         boolean isTwoAboveSolid = level().getBlockState(blockPosition().above(2)).isSolid();
+        boolean isThreeAboveSolid = level().getBlockState(blockPosition().above(3)).isSolid();
 
-        /* [- : blocks | o : cave dweller]
-        To handle these two variants:
-            o
-        ----o       ----o
-            o           o
-        -----       ----o
-        */
         Vec3i offset = new Vec3i(getDirection().getStepX(), getDirection().getStepY(), getDirection().getStepZ());
         boolean isFacingSolid = level().getBlockState(blockPosition().relative(getDirection())).isSolid();
 
@@ -216,7 +217,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         boolean isOffsetFacingTwoAboveSolid = level().getBlockState(blockPosition().offset(offset).above(2)).isSolid();
         boolean isOffsetFacingAboveSolid = level().getBlockState(blockPosition().relative(getDirection()).above()).isSolid();
 
-        boolean shouldCrouch = isTwoAboveSolid || (!isOffsetFacingSolid && !isOffsetFacingAboveSolid && isOffsetFacingTwoAboveSolid);
+        boolean shouldCrouch = isTwoAboveSolid || (!isOffsetFacingSolid && !isOffsetFacingAboveSolid && (isOffsetFacingTwoAboveSolid || isFacingSolid && isThreeAboveSolid)) ;
         boolean shouldCrawl = isAboveSolid || (!isOffsetFacingSolid && isOffsetFacingAboveSolid);
 
         if (level() instanceof ServerLevel) {
