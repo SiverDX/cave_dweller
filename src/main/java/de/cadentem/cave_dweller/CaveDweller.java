@@ -177,14 +177,17 @@ public class CaveDweller {
                 if (timer.currentVictim != null) {
                     level.getPlayers(this::playCaveSoundToSpelunkers);
                     timer.resetNoiseTimer();
-                    Optional<CaveDwellerEntity> optional = Utils.trySpawnMob(timer.currentVictim, ModEntityTypes.CAVE_DWELLER.get(), MobSpawnType.TRIGGERED, level, timer.currentVictim.blockPosition(), 40, /* x & z offset */ 35, /* y offset */ 6, SpawnUtil.Strategy.ON_TOP_OF_COLLIDER);
+                    Optional<CaveDwellerEntity> optionalEntity = Utils.trySpawnMob(timer.currentVictim, ModEntityTypes.CAVE_DWELLER.get(), MobSpawnType.TRIGGERED, level, timer.currentVictim.blockPosition(), 40, /* x & z offset */ 35, /* y offset */ 6, SpawnUtil.Strategy.ON_TOP_OF_COLLIDER);
 
-                    if (optional.isPresent()) {
-                        CaveDwellerEntity caveDweller = optional.get();
+                    if (optionalEntity.isPresent()) {
+                        CaveDwellerEntity caveDweller = optionalEntity.get();
                         caveDweller.setInvisible(true);
                         caveDweller.hasSpawned = true;
 
                         timer.resetSpawnTimer();
+                    } else {
+                        // Spawn failed - potentially try a different player
+                        timer.currentVictim = null;
                     }
                 }
             }

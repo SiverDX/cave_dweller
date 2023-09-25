@@ -35,10 +35,8 @@ public class CaveDwellerTargetSeesMeGoal extends NearestAttackableTargetGoal<Pla
         caveDweller.setTarget(target);
         caveDweller.getEntityData().set(CaveDwellerEntity.SPOTTED_ACCESSOR, true);
 
-        if (target != null && !target.hasLineOfSight(caveDweller)) {
-            caveDweller.pickRoll(List.of(Roll.CHASE, Roll.STARE, Roll.STARE, Roll.STARE, Roll.FLEE));
-        } else {
-            caveDweller.reRoll();
+        if (target != null) {
+            caveDweller.pickRoll(List.of(Roll.CHASE, Roll.STARE, Roll.STARE, Roll.FLEE));
         }
 
         super.start();

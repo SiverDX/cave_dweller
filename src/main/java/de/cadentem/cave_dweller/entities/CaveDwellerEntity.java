@@ -140,14 +140,14 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     @Override
     protected void registerGoals() {
         goalSelector.addGoal(1, new CaveDwellerChaseGoal(this, true));
-        goalSelector.addGoal(1, new CaveDwellerFleeGoal(this, 20.0F, 1.0));
+        goalSelector.addGoal(1, new CaveDwellerFleeGoal(this, 20, 1));
         goalSelector.addGoal(2, new CaveDwellerBreakInvisGoal(this));
         goalSelector.addGoal(2, new CaveDwellerStareGoal(this));
         if (ServerConfig.CAN_BREAK_DOOR.get()) { // TODO :: Remove for already spawned entities on config change?
             goalSelector.addGoal(2, new CaveDwellerBreakDoorGoal(this, difficulty -> true));
         }
-        goalSelector.addGoal(3, new CaveDwellerStrollGoal(this, 0.7));
-        targetSelector.addGoal(1, new CaveDwellerTargetTooCloseGoal(this, 12.0F));
+        goalSelector.addGoal(3, new CaveDwellerStrollGoal(this, 0.35));
+        targetSelector.addGoal(1, new CaveDwellerTargetTooCloseGoal(this, 12));
         targetSelector.addGoal(2, new CaveDwellerTargetSeesMeGoal(this));
     }
 
@@ -505,7 +505,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             return dot > 0.99 && player.hasLineOfSight(this);
         }
 
-        return dot > 0;
+        return dot > 0.3;
     }
 
     public boolean teleportToTarget() {

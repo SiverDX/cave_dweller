@@ -4,7 +4,10 @@ import de.cadentem.cave_dweller.CaveDweller;
 import de.cadentem.cave_dweller.config.ServerConfig;
 import net.minecraft.world.entity.Entity;
 
+import javax.annotation.Nullable;
+
 public class Timer {
+    @Nullable
     public Entity currentVictim;
     public int currentSpawn;
     public int currentNoise;
@@ -16,7 +19,7 @@ public class Timer {
         resetNoiseTimer();
     }
 
-    public Timer(final Entity currentVictim) {
+    public Timer(@Nullable final Entity currentVictim) {
         super();
         this.currentVictim = currentVictim;
     }
