@@ -12,7 +12,7 @@ public class CaveDwellerBreakInvisGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        return caveDweller.isInvisible() && !caveDweller.targetIsLookingAtMe;
+        return caveDweller.isInvisible() && !caveDweller.targetIsFacingMe;
     }
 
     @Override

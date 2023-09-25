@@ -65,7 +65,7 @@ public class CaveDwellerStareGoal extends Goal {
             return;
         }
 
-        boolean actuallyLooking = caveDweller.targetIsLookingAtMe && target.hasLineOfSight(caveDweller);
+        boolean actuallyLooking = caveDweller.targetIsFacingMe && target.hasLineOfSight(caveDweller);
 
         if (wasNotLookingPreviously && actuallyLooking) {
             lookedAtCount++;

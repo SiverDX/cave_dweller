@@ -26,6 +26,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.navigation.WallClimberNavigation;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
@@ -67,19 +68,15 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     public static final EntityDataAccessor<Boolean> SPOTTED_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
     public static final EntityDataAccessor<Boolean> CLIMBING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
 
-    private final float twoBlockSpaceCooldown;
-
     public Roll currentRoll = Roll.STROLL;
     public boolean isFleeing;
     /** To be able to create a path while spawning */
     public boolean hasSpawned;
     public boolean pleaseStopMoving;
-    public boolean targetIsLookingAtMe;
+    public boolean targetIsFacingMe;
 
-    private float twoBlockSpaceTimer;
     private int ticksTillRemove;
     private int chaseSoundClock;
-    private boolean inTwoBlockSpace;
     private boolean alreadyPlayedFleeSound;
     private boolean alreadyPlayedSpottedSound;
     private boolean startedPlayingChaseSound;
@@ -88,7 +85,6 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     public CaveDwellerEntity(final EntityType<? extends CaveDwellerEntity> entityType, final Level level) {
         super(entityType, level);
         this.refreshDimensions();
-        this.twoBlockSpaceCooldown = 5.0F;
         this.ticksTillRemove = Utils.secondsToTicks(ServerConfig.TIME_UNTIL_LEAVE.get());
     }
 
@@ -197,46 +193,32 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         }
 
         if (getTarget() != null) {
-            targetIsLookingAtMe = isLookingAtMe(getTarget());
+            targetIsFacingMe = isLookingAtMe(getTarget(), false);
         }
 
-        boolean shouldCrouch = false;
+        boolean isAboveSolid = level.getBlockState(blockPosition().above()).getMaterial().isSolid();
+        boolean isTwoAboveSolid = level.getBlockState(blockPosition().above(2)).getMaterial().isSolid();
 
-        if (!getEntityData().get(CRAWLING_ACCESSOR)) {
-            boolean isTwoAboveSolid = level.getBlockState(blockPosition().above().above()).getMaterial().isSolid();
+        /* [- : blocks | o : cave dweller]
+        To handle these two variants:
+            o
+        ----o       ----o
+            o           o
+        -----       ----o
+        */
+        Vec3i offset = new Vec3i(getDirection().getStepX(), getDirection().getStepY(), getDirection().getStepZ());
+        boolean isFacingSolid = level.getBlockState(blockPosition().relative(getDirection())).getMaterial().isSolid();
 
-            /* [x : blocks | o : cave dweller]
-            To handle these two variants:
-                o
-            xxxxo       xxxxo
-                o           o
-            xxxxx       xxxxo
-            */
-            Vec3i offset = new Vec3i(getDirection().getStepX(), getDirection().getStepY(), getDirection().getStepZ());
-            boolean isFacingSolid = level.getBlockState(blockPosition().relative(getDirection())).getMaterial().isSolid();
-
-            if (isFacingSolid) {
-                offset = offset.offset(0, 1, 0);
-            }
-
-            boolean isOffsetFacingSolid = level.getBlockState(blockPosition().offset(offset)).getMaterial().isSolid();
-            boolean isOffsetFacingTwoAboveSolid = level.getBlockState(blockPosition().offset(offset).above().above()).getMaterial().isSolid();
-            boolean isOffsetFacingAboveSolid = level.getBlockState(blockPosition().relative(getDirection()).above()).getMaterial().isSolid();
-
-            shouldCrouch = isTwoAboveSolid || (!isOffsetFacingSolid && !isOffsetFacingAboveSolid && isOffsetFacingTwoAboveSolid);
+        if (isFacingSolid) {
+            offset = offset.offset(0, 1, 0);
         }
 
-        if (shouldCrouch) {
-            twoBlockSpaceTimer = twoBlockSpaceCooldown;
-            inTwoBlockSpace = true;
-        } else {
-            // Don't immediately stop crouching
-            --twoBlockSpaceTimer;
+        boolean isOffsetFacingSolid = level.getBlockState(blockPosition().offset(offset)).getMaterial().isSolid();
+        boolean isOffsetFacingTwoAboveSolid = level.getBlockState(blockPosition().offset(offset).above(2)).getMaterial().isSolid();
+        boolean isOffsetFacingAboveSolid = level.getBlockState(blockPosition().relative(getDirection()).above()).getMaterial().isSolid();
 
-            if (twoBlockSpaceTimer <= 0.0F) {
-                inTwoBlockSpace = false;
-            }
-        }
+        boolean shouldCrouch = isTwoAboveSolid || (!isOffsetFacingSolid && !isOffsetFacingAboveSolid && isOffsetFacingTwoAboveSolid);
+        boolean shouldCrawl = isAboveSolid || (!isOffsetFacingSolid && isOffsetFacingAboveSolid);
 
         if (level instanceof ServerLevel) {
             if (isAggressive() || isFleeing) {
@@ -244,7 +226,8 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             }
 
             setClimbing(horizontalCollision);
-            entityData.set(CROUCHING_ACCESSOR, inTwoBlockSpace);
+            entityData.set(CROUCHING_ACCESSOR, shouldCrouch);
+            setCrawling(shouldCrawl);
         }
 
         if (entityData.get(SPOTTED_ACCESSOR)) {
@@ -252,8 +235,13 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         }
 
         refreshDimensions();
+        getNavigation().setSpeedModifier(getSpeedModifier());
 
         super.tick();
+    }
+
+    public double getSpeedModifier() {
+        return isCrawling() ? 0.35 : isCrouching() ? 0.6 : 0.85;
     }
 
     @Override
@@ -296,8 +284,9 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             return false;
         }
 
-        if (getTarget() != null /*&& getTarget().getPosition(1).y > getY()*/) {
-            return entityData.get(CLIMBING_ACCESSOR);
+        if (getTarget() != null) {
+            // TODO :: Not sure if the initial two checks are needed
+            return !isCrawling() && !isCrouching() && entityData.get(CLIMBING_ACCESSOR);
         }
 
         return false;
@@ -467,6 +456,27 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         playEntitySound(soundevent, 2.0F, 1.0F);
     }
 
+    public void setCrawling(boolean shouldCrawl) {
+        if (shouldCrawl) {
+            getEntityData().set(CROUCHING_ACCESSOR, false);
+        }
+
+        getEntityData().set(CRAWLING_ACCESSOR, shouldCrawl);
+        refreshDimensions();
+    }
+
+    public boolean isCrawling() {
+        return entityData.get(CRAWLING_ACCESSOR);
+    }
+
+
+    /* TODO :: Check
+    @Override
+    public boolean isVisuallyCrawling() {
+        return super.isVisuallyCrawling();
+    }
+    */
+
     @Override
     protected void tickDeath() {
         super.tickDeath();
@@ -477,7 +487,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         }
     }
 
-    public boolean isLookingAtMe(final Entity target) {
+    public boolean isLookingAtMe(final Entity target, boolean directlyLooking) {
         if (!Utils.isValidPlayer(target)) {
             return false;
         }
@@ -486,17 +496,16 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             return false;
         }
 
-        return isLooking(target);
-    }
-
-    private boolean isLooking(final Entity target) {
         Vec3 viewVector = target.getViewVector(1.0F).normalize();
         Vec3 difference = new Vec3(getX() - target.getX(), getEyeY() - target.getEyeY(), getZ() - target.getZ());
         difference = difference.normalize();
         double dot = viewVector.dot(difference);
 
-        // FIXME :: The line of sight method is very unreliable
-        return dot > 0 /*&& target.hasLineOfSight(this)*/;
+        if (directlyLooking && target instanceof Player player) {
+            return dot > 0.99 && player.hasLineOfSight(this);
+        }
+
+        return dot > 0;
     }
 
     public boolean teleportToTarget() {
