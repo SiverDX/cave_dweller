@@ -199,6 +199,8 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         }
 
         if (level instanceof ServerLevel) {
+            // TODO :: Check crawl first and then the additional block states (two / three above) for crouch if needed
+
             boolean isAboveSolid = level.getBlockState(blockPosition().above()).getMaterial().isSolid();
             boolean isTwoAboveSolid = level.getBlockState(blockPosition().above(2)).getMaterial().isSolid();
             boolean isThreeAboveSolid = level.getBlockState(blockPosition().above(3)).getMaterial().isSolid();
