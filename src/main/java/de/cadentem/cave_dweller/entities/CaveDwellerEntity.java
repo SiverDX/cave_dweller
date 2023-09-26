@@ -219,19 +219,19 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             boolean isOffsetFacingAboveSolid = level.getBlockState(blockPosition().offset(offset).above()).getMaterial().isSolid();
             boolean isOffsetFacingTwoAboveSolid = level.getBlockState(blockPosition().offset(offset).above(2)).getMaterial().isSolid();
 
-            /* [- : blocks | o : cave dweller]
+            /* [- : blocks | o : cave dweller | + : cave dweller in solid block]
                 To handle these variants among other things:
-                    o       -----
-                ----o           o
-                    o           o
-                -----       ----o
+               ----+        ----o       -----
+                   o            o           o
+                   o            o           o
+               -----        -----       ----o
             */
             boolean shouldCrouch = isTwoAboveSolid || (!isOffsetFacingSolid && !isOffsetFacingAboveSolid && (isOffsetFacingTwoAboveSolid || isFacingSolid && isThreeAboveSolid)) ;
 
             /* [- : blocks | o : cave dweller | + : cave dweller in solid block]
                 To handle these variants among other things:
-                    o       ----o
-                ----+          -o       ----o
+                    o           o
+                ----+       ----o       ----+
                     o           o           o
                 -----       -----       ----o
             */
