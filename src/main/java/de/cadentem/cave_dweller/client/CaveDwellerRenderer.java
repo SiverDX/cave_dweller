@@ -25,6 +25,8 @@ public class CaveDwellerRenderer extends GeoEntityRenderer<CaveDwellerEntity> {
 
     @Override // FIXME :: In some cases this does not get called, resulting in an invisible entity?
     public void render(final CaveDwellerEntity entity, float entityYaw, float partialTick, @NotNull final PoseStack poseStack, @NotNull final MultiBufferSource bufferSource, int packedLight) {
+        poseStack.pushPose();
+
         if (entity.isBaby()) {
             poseStack.scale(0.1F, 0.1F, 0.1F);
         } else {
@@ -32,5 +34,6 @@ public class CaveDwellerRenderer extends GeoEntityRenderer<CaveDwellerEntity> {
         }
 
         super.render(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
+        poseStack.popPose();
     }
 }
