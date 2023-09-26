@@ -30,6 +30,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.pathfinder.BlockPathTypes;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.network.PacketDistributor;
@@ -85,6 +86,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         super(entityType, level);
         this.refreshDimensions();
         this.ticksTillRemove = Utils.secondsToTicks(ServerConfig.TIME_UNTIL_LEAVE.get());
+        this.setPathfindingMalus(BlockPathTypes.UNPASSABLE_RAIL, 0.0f);
     }
 
     @Override
@@ -196,7 +198,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         }
 
         /* [- : blocks | o : cave dweller]
-            To handle these variants:
+            To handle these variants among other things:
                 o                   -----
             ----o       ----o           o
                 o           o           o
@@ -206,16 +208,21 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         boolean isTwoAboveSolid = level().getBlockState(blockPosition().above(2)).isSolid();
         boolean isThreeAboveSolid = level().getBlockState(blockPosition().above(3)).isSolid();
 
-        Vec3i offset = new Vec3i(getDirection().getStepX(), getDirection().getStepY(), getDirection().getStepZ());
+        Vec3i offset = getDirectionVector();
         boolean isFacingSolid = level().getBlockState(blockPosition().relative(getDirection())).isSolid();
 
+        /* Offset is set to the block above the block position (which is at feet level) (since direction is used it's the block in front for both cases)
+            -----o                  -----o
+                 o                       o <- offset
+            -----o <- current       -----o
+        */
         if (isFacingSolid) {
             offset = offset.offset(0, 1, 0);
         }
 
         boolean isOffsetFacingSolid = level().getBlockState(blockPosition().offset(offset)).isSolid();
+        boolean isOffsetFacingAboveSolid = level().getBlockState(blockPosition().offset(offset).above()).isSolid();
         boolean isOffsetFacingTwoAboveSolid = level().getBlockState(blockPosition().offset(offset).above(2)).isSolid();
-        boolean isOffsetFacingAboveSolid = level().getBlockState(blockPosition().relative(getDirection()).above()).isSolid();
 
         boolean shouldCrouch = isTwoAboveSolid || (!isOffsetFacingSolid && !isOffsetFacingAboveSolid && (isOffsetFacingTwoAboveSolid || isFacingSolid && isThreeAboveSolid)) ;
         boolean shouldCrawl = isAboveSolid || (!isOffsetFacingSolid && isOffsetFacingAboveSolid);
@@ -304,10 +311,17 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
     }
 
     private PlayState predicate(final AnimationState<CaveDwellerEntity> state) {
-        if (level().getBlockState(blockPosition().above()).isSolid()) {
+        boolean isCurrentAboveSolid = level().getBlockState(blockPosition().above()).isSolid();
+        boolean unsure = isCrawling() && level().getBlockState(blockPosition()).isSolid();
+//        boolean isFacingAboveSolid = isCrawling() && level.getBlockState(blockPosition().offset(getDirectionVector()).above()).getMaterial().isSolid();
+        boolean isCurrentTwoAboveSolid = level().getBlockState(blockPosition().above(2)).isSolid();
+//        boolean isFacingTwoAboveSolid = isCrouching() && level.getBlockState(blockPosition().offset(getDirectionVector()).above(2)).getMaterial().isSolid();;
+
+        // TODO :: Climbing animation
+        if (isCurrentAboveSolid || unsure /*|| isFacingAboveSolid*/) {
             // Crawling
             return state.setAndContinue(CRAWL);
-        } else if (level().getBlockState(blockPosition().above(2)).isSolid()) {
+        } else if (isCurrentTwoAboveSolid /*|| isFacingTwoAboveSolid*/) {
             // Crouching
             if (state.isMoving()) {
                 return state.setAndContinue(CROUCH_RUN);
@@ -527,6 +541,10 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         teleportTo(validPosition.getX(), validPosition.getY(), validPosition.getZ());
 
         return true;
+    }
+
+    private Vec3i getDirectionVector() {
+        return new Vec3i(getDirection().getStepX(), getDirection().getStepY(), getDirection().getStepZ());
     }
 
     @Override
