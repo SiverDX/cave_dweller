@@ -30,6 +30,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.pathfinder.BlockPathTypes;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.network.PacketDistributor;
@@ -86,6 +87,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         super(entityType, level);
         this.refreshDimensions();
         this.ticksTillRemove = Utils.secondsToTicks(ServerConfig.TIME_UNTIL_LEAVE.get());
+        this.setPathfindingMalus(BlockPathTypes.UNPASSABLE_RAIL, 0.0f);
     }
 
     @Override
@@ -197,7 +199,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         }
 
         /* [- : blocks | o : cave dweller]
-            To handle these variants:
+            To handle these variants among other things:
                 o                   -----
             ----o       ----o           o
                 o           o           o
@@ -207,16 +209,21 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         boolean isTwoAboveSolid = level.getBlockState(blockPosition().above(2)).getMaterial().isSolid();
         boolean isThreeAboveSolid = level.getBlockState(blockPosition().above(3)).getMaterial().isSolid();
 
-        Vec3i offset = new Vec3i(getDirection().getStepX(), getDirection().getStepY(), getDirection().getStepZ());
+        Vec3i offset = getDirectionVector();
         boolean isFacingSolid = level.getBlockState(blockPosition().relative(getDirection())).getMaterial().isSolid();
 
+        /* Offset is set to the block above the block position (which is at feet level) (since direction is used it's the block in front for both cases)
+            -----o                  -----o
+                 o                       o <- offset
+            -----o <- current       -----o
+        */
         if (isFacingSolid) {
             offset = offset.offset(0, 1, 0);
         }
 
         boolean isOffsetFacingSolid = level.getBlockState(blockPosition().offset(offset)).getMaterial().isSolid();
+        boolean isOffsetFacingAboveSolid = level.getBlockState(blockPosition().offset(offset).above()).getMaterial().isSolid();
         boolean isOffsetFacingTwoAboveSolid = level.getBlockState(blockPosition().offset(offset).above(2)).getMaterial().isSolid();
-        boolean isOffsetFacingAboveSolid = level.getBlockState(blockPosition().relative(getDirection()).above()).getMaterial().isSolid();
 
         boolean shouldCrouch = isTwoAboveSolid || (!isOffsetFacingSolid && !isOffsetFacingAboveSolid && (isOffsetFacingTwoAboveSolid || isFacingSolid && isThreeAboveSolid)) ;
         boolean shouldCrawl = isAboveSolid || (!isOffsetFacingSolid && isOffsetFacingAboveSolid);
@@ -308,11 +315,17 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         AnimationBuilder builder = new AnimationBuilder();
         AnimationController<CaveDwellerEntity> controller = event.getController();
 
+        boolean isCurrentAboveSolid = level.getBlockState(blockPosition().above()).getMaterial().isSolid();
+        boolean unsure = isCrawling() && level.getBlockState(blockPosition()).getMaterial().isSolid();
+//        boolean isFacingAboveSolid = isCrawling() && level.getBlockState(blockPosition().offset(getDirectionVector()).above()).getMaterial().isSolid();
+        boolean isCurrentTwoAboveSolid = level.getBlockState(blockPosition().above(2)).getMaterial().isSolid();
+//        boolean isFacingTwoAboveSolid = isCrouching() && level.getBlockState(blockPosition().offset(getDirectionVector()).above(2)).getMaterial().isSolid();;
+
         // TODO :: Climbing animation
-        if (level.getBlockState(blockPosition().above()).getMaterial().isSolidBlocking()) {
+        if (isCurrentAboveSolid || unsure /*|| isFacingAboveSolid*/) {
             // Crawling
             builder.addAnimation(CRAWL.animationName, CRAWL.loopType);
-        } else if (level.getBlockState(blockPosition().above(2)).getMaterial().isSolidBlocking()) {
+        } else if (isCurrentTwoAboveSolid /*|| isFacingTwoAboveSolid*/) {
             // Crouching
             if (event.isMoving()) {
                 builder.addAnimation(CROUCH_RUN.animationName, CROUCH_RUN.loopType);
@@ -535,6 +548,10 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         teleportTo(validPosition.getX(), validPosition.getY(), validPosition.getZ());
 
         return true;
+    }
+
+    private Vec3i getDirectionVector() {
+        return new Vec3i(getDirection().getStepX(), getDirection().getStepY(), getDirection().getStepZ());
     }
 
     @Override

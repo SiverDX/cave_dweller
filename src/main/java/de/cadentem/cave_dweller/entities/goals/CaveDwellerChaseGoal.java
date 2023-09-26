@@ -135,7 +135,7 @@ public class CaveDwellerChaseGoal extends Goal {
         // Create a new path when the target moves away too far from the initial goal
         boolean targetMoved = path != null && (path.getEndNode() != null && path.getEndNode().distanceTo(target.blockPosition()) > 2);
 
-        if (path == null || targetMoved || path.isDone() && !shouldClimb(path) || caveDweller.getNavigation().shouldRecomputePath(target.blockPosition()) && caveDweller.tickCount % 20 == 0) {
+        if (path == null || caveDweller.getNavigation().isStuck() || targetMoved || path.isDone() && !shouldClimb(path) || caveDweller.getNavigation().shouldRecomputePath(target.blockPosition()) && caveDweller.tickCount % 20 == 0) {
             path = caveDweller.getNavigation().createPath(target, 0);
             fixPath(path);
         }

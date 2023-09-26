@@ -8,6 +8,5 @@
     "MixinGroundPathNavigation",
     "MixinPathNavigation"
   ],
-  "client": [
-  ]
+  "client": []
 }
