@@ -170,18 +170,17 @@ public class CaveDweller {
         timer.currentNoise++;
 
         if (timer.isNoiseTimerReached() && (caveDwellerCount.get() > 0 || timer.currentSpawn >= Utils.secondsToTicks(ServerConfig.CAN_SPAWN_MAX.get()) / 2)) {
-            players.forEach(this::playCaveSoundToSpelunkers);
-            timer.resetNoiseTimer();
+            playCaveSoundToSpelunkers(players, timer);
         }
 
         if (timer.isSpawnTimerReached() && caveDwellerCount.get() < ServerConfig.MAXIMUM_AMOUNT.get()) {
             if (RANDOM.nextDouble() <= ServerConfig.SPAWN_CHANCE_PER_TICK.get()) {
                 if (timer.currentVictim != null) {
-                    level.getPlayers(this::playCaveSoundToSpelunkers);
-                    timer.resetNoiseTimer();
                     Optional<CaveDwellerEntity> optionalEntity = Utils.trySpawnMob(timer.currentVictim, ModEntityTypes.CAVE_DWELLER.get(), MobSpawnType.TRIGGERED, level, timer.currentVictim.blockPosition(), 40, /* x & z offset */ 35, /* y offset */ 6, SpawnUtil.Strategy.ON_TOP_OF_COLLIDER);
 
                     if (optionalEntity.isPresent()) {
+                        playCaveSoundToSpelunkers(players, timer);
+
                         CaveDwellerEntity caveDweller = optionalEntity.get();
                         caveDweller.setInvisible(true);
                         caveDweller.hasSpawned = true;
@@ -196,17 +195,21 @@ public class CaveDweller {
         }
     }
 
-    private boolean playCaveSoundToSpelunkers(final ServerPlayer player) {
-        ResourceLocation soundLocation = switch (RANDOM.nextInt(4)) {
-            case 1 -> ModSounds.CAVENOISE_2.get().getLocation();
-            case 2 -> ModSounds.CAVENOISE_3.get().getLocation();
-            case 3 -> ModSounds.CAVENOISE_4.get().getLocation();
-            default -> ModSounds.CAVENOISE_1.get().getLocation();
-        };
+    private void playCaveSoundToSpelunkers(final List<ServerPlayer> players, final Timer timer) {
+        players.forEach(player -> {
+            ResourceLocation soundLocation = switch (RANDOM.nextInt(4)) {
+                case 1 -> ModSounds.CAVENOISE_2.get().getLocation();
+                case 2 -> ModSounds.CAVENOISE_3.get().getLocation();
+                case 3 -> ModSounds.CAVENOISE_4.get().getLocation();
+                default -> ModSounds.CAVENOISE_1.get().getLocation();
+            };
 
-        NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CaveSound(soundLocation, player.blockPosition(), 2.0F, 1.0F));
+            if (!ServerConfig.ONLY_PLAY_NOISE_TO_TARGET.get() || (timer.currentVictim != null && player.is(timer.currentVictim))) {
+                NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CaveSound(soundLocation, player.blockPosition(), 2.0F, 1.0F));
+            }
+        });
 
-        return true;
+        timer.resetNoiseTimer();
     }
 
     private boolean isRelevantPlayer(final ServerPlayer player) {
