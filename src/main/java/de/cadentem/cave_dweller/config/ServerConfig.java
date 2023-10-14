@@ -61,6 +61,9 @@ public class ServerConfig {
     public static ForgeConfigSpec.DoubleValue MOVEMENT_SPEED;
     public static ForgeConfigSpec.DoubleValue DEPTH_STRIDER_BONUS;
 
+    // Misc
+    public static ForgeConfigSpec.BooleanValue ONLY_PLAY_NOISE_TO_TARGET;
+
     static {
         BUILDER.push("Timers");
         BUILDER.push("Spawn");
@@ -86,7 +89,7 @@ public class ServerConfig {
         ALLOW_SURFACE_SPAWN = BUILDER.comment("Whether the Cave Dweller can spawn on the surface or not").define("allow_surface_spawn", false);
         SKY_LIGHT_LEVEL = BUILDER.comment("The maximum sky light level the Cave Dweller can spawn at").defineInRange("sky_light_level", 8, 0, 15);
         BLOCK_LIGHT_LEVEL = BUILDER.comment("The maximum block light level the Cave Dweller can spawn at").defineInRange("block_light_level", 15, 0, 15);
-        MAXIMUM_AMOUNT = BUILDER.comment("The maximum amount of cave dwellers which can exist at the same time").defineInRange("maximum_amount", 5, 0, 100);
+        MAXIMUM_AMOUNT = BUILDER.comment("The maximum amount of cave dwellers which can exist at the same time").defineInRange("maximum_amount", 3, 0, 100);
         SPAWN_DISTANCE = BUILDER.comment("How close to players the cave dweller is allowed to spawn (in blocks)").defineInRange("spawn_distance", 16, 0, 64);
         CHECK_PATH_TO_SPAWN = BUILDER.comment("If set to true the cave dweller will try to find a spawn position with a possible path to the player").define("check_path_to_spawn", true);
         BUILDER.push("Dimensions");
@@ -114,6 +117,10 @@ public class ServerConfig {
         ATTACK_SPEED = BUILDER.comment("Attack speed").defineInRange("attack_speed", 0.35, 0, 10);
         MOVEMENT_SPEED = BUILDER.comment("Movement speed").defineInRange("movement_speed", 0.5, 0, 5);
         DEPTH_STRIDER_BONUS = BUILDER.comment("Depth Strider (movement speed in water) bonus").defineInRange("depth_strider_bonus", 1.5, 0, 3);
+        BUILDER.pop();
+
+        BUILDER.push("Misc");
+        ONLY_PLAY_NOISE_TO_TARGET = BUILDER.comment("Only play the ambient noises to the current (spawn) target (Note: The target can change when a spawn attempt is not successful)").define("only_play_noise_to_target", false);
         BUILDER.pop();
 
         SPEC = BUILDER.build();

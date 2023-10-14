@@ -59,6 +59,12 @@ minecraft {
             property 'forge.enabledGameTestNamespaces', mod_id
         }
 
+        clientRandom {
+            parent runs.client
+            // #### will be replaced with a random number | UUID is a randomly generated one
+            args '--username', 'Dev####', '--uuid', 'fdb0e318-1ac3-4049-b6f8-d024c0b87a56'
+        }
+
         server {
             property 'forge.enabledGameTestNamespaces', mod_id
             args '--nogui'
