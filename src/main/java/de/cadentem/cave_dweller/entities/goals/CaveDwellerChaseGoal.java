@@ -6,6 +6,7 @@ import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.pathfinder.Path;
 
 import java.util.EnumSet;
@@ -14,6 +15,8 @@ public class CaveDwellerChaseGoal extends Goal {
     private final CaveDwellerEntity caveDweller;
     private final int maxSpeedReached;
     private final boolean followTargetEvenIfNotSeen;
+
+    private LivingEntity previousTarget;
 
     private long lastGameTimeCheck;
     private int ticksUntilLeave;
@@ -51,7 +54,7 @@ public class CaveDwellerChaseGoal extends Goal {
         lastGameTimeCheck = ticks;
         LivingEntity target = caveDweller.getTarget();
 
-        if (!Utils.isValidPlayer(target)) {
+        if (!Utils.isValidTarget(target)) {
             return false;
         }
 
@@ -77,11 +80,17 @@ public class CaveDwellerChaseGoal extends Goal {
     public boolean canContinueToUse() {
         LivingEntity target = caveDweller.getTarget();
 
-        if (!Utils.isValidPlayer(target)) {
-            // Most likely killed the target in this case
-            caveDweller.disappear();
+        if (!Utils.isValidTarget(target)) {
+            if (target == null && previousTarget instanceof Player) {
+                // Most likely killed the target in this case
+                caveDweller.disappear();
+            }
+            // TODO :: Immediately search for a new target? Or store last targeted player and target that again?
+
             return false;
         }
+
+        previousTarget = target;
 
         if (!followTargetEvenIfNotSeen) {
             return !caveDweller.getNavigation().isDone();
@@ -100,11 +109,12 @@ public class CaveDwellerChaseGoal extends Goal {
     public void stop() {
         LivingEntity target = caveDweller.getTarget();
 
-        if (!Utils.isValidPlayer(target)) {
+        if (!Utils.isValidTarget(target)) {
             caveDweller.setTarget(null);
         }
 
         speedUp = 0;
+        previousTarget = null;
 
         caveDweller.setAggressive(false);
         caveDweller.getEntityData().set(CaveDwellerEntity.CRAWLING_ACCESSOR, false);
@@ -125,7 +135,7 @@ public class CaveDwellerChaseGoal extends Goal {
 
         LivingEntity target = caveDweller.getTarget();
 
-        if (!Utils.isValidPlayer(target)) {
+        if (!Utils.isValidTarget(target)) {
             return;
         }
 
