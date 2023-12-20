@@ -9,7 +9,6 @@ import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -17,25 +16,23 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.navigation.WallClimberNavigation;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.BlockPathTypes;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib3.core.IAnimatable;
 import software.bernie.geckolib3.core.PlayState;
 import software.bernie.geckolib3.core.builder.AnimationBuilder;
@@ -91,24 +88,26 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     }
 
     @Override
-    public @Nullable SpawnGroupData finalizeSpawn(@NotNull final ServerLevelAccessor level, @NotNull final DifficultyInstance difficulty, @NotNull final MobSpawnType reason, @Nullable final SpawnGroupData spawnData, @Nullable final CompoundTag tagData) {
+    public void onAddedToWorld() {
+        super.onAddedToWorld();
+
         setAttribute(getAttribute(Attributes.MAX_HEALTH), ServerConfig.MAX_HEALTH.get());
         setAttribute(getAttribute(Attributes.ATTACK_DAMAGE), ServerConfig.ATTACK_DAMAGE.get());
         setAttribute(getAttribute(Attributes.ATTACK_SPEED), ServerConfig.ATTACK_SPEED.get());
         setAttribute(getAttribute(Attributes.MOVEMENT_SPEED), ServerConfig.MOVEMENT_SPEED.get());
         setAttribute(getAttribute(ForgeMod.STEP_HEIGHT_ADDITION.get()), 0.4); // LivingEntity default is 0.6
-
-        return super.finalizeSpawn(level, difficulty, reason, spawnData, tagData);
     }
 
-    private void setAttribute(final AttributeInstance attribute, double value) {
+    private void setAttribute(final AttributeInstance attribute, double newValue) {
         if (attribute != null) {
-            attribute.setBaseValue(value);
+            double baseValue = attribute.getBaseValue();
+            float difference = (float) (newValue - baseValue);
+            attribute.setBaseValue(newValue);
 
             if (attribute.getAttribute() == Attributes.MAX_HEALTH) {
-                setHealth((float) value);
+                setHealth(getHealth() + difference);
             } else if (attribute.getAttribute() == Attributes.MOVEMENT_SPEED) {
-                setSpeed((float) value);
+                setSpeed(getSpeed() + difference);
             }
         }
     }
@@ -149,6 +148,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
             goalSelector.addGoal(2, new CaveDwellerBreakDoorGoal(this, difficulty -> true));
         }
         goalSelector.addGoal(3, new CaveDwellerStrollGoal(this, 0.35));
+        targetSelector.addGoal(0, new CustomHurtByTargetGoal(this));
         targetSelector.addGoal(1, new CaveDwellerTargetTooCloseGoal(this, 12));
         targetSelector.addGoal(2, new CaveDwellerTargetSeesMeGoal(this));
     }
@@ -178,6 +178,11 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         }
 
         return false;
+    }
+
+    @Override
+    public boolean canDisableShield() {
+        return ServerConfig.CAN_DISABLE_SHIELDS.get();
     }
 
     @Override
@@ -310,6 +315,10 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         return false;
     }
 
+    public void setSpotted(boolean value) {
+        entityData.set(SPOTTED_ACCESSOR, value);
+    }
+
     public void setClimbing(boolean isClimbing) {
         entityData.set(CLIMBING_ACCESSOR, isClimbing);
     }
@@ -332,7 +341,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
 //        boolean isFacingTwoAboveSolid = isCrouching() && level.getBlockState(blockPosition().offset(getDirectionVector()).above(2)).getMaterial().isSolid();;
 
         // TODO :: Climbing animation
-        if (isCurrentAboveSolid || unsure/* || isFacingAboveSolid*/) {
+        if (isCurrentAboveSolid || unsure /*|| isFacingAboveSolid*/) {
             // Crawling
             builder.addAnimation(CRAWL.animationName, CRAWL.loopType);
         } else if (isCurrentTwoAboveSolid /*|| isFacingTwoAboveSolid*/) {
@@ -396,11 +405,10 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
         level.playSound(null, this, soundEvent, SoundSource.HOSTILE, volume, pitch);
     }
 
-    // TODO :: Is this needed? Why not just playEntitySound
     private void playBlockPosSound(final ResourceLocation soundResource, float volume, float pitch) {
         if (level instanceof ServerLevel serverLevel) {
-            int radius = 60; // blocks
-            serverLevel.getPlayers(player -> player.distanceToSqr(this) <= radius * radius).forEach(player -> NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CaveSound(soundResource, player.blockPosition(), volume, pitch)));
+            int radius = 32; // blocks
+            serverLevel.getPlayers(player -> player.distanceToSqr(this) <= radius * radius).forEach(player -> NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CaveSound(soundResource, blockPosition(), volume, pitch)));
         }
     }
 

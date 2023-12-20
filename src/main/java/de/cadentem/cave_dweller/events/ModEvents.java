@@ -25,16 +25,13 @@ public class ModEvents {
         if (event.getConfig().getSpec() == ClientConfig.SPEC) {
             ClientConfig.SPEC.acceptConfig(event.getConfig().getConfigData());
             CaveDwellerEyesLayer.TEXTURE = new ResourceLocation(CaveDweller.MODID, "textures/entity/cave_dweller_eyes_texture" + Utils.getTextureAppend() + ".png");
-
             CaveDweller.LOG.info("Client configuration has been reloaded");
         }
 
         if (event.getConfig().getSpec() == ServerConfig.SPEC) {
             ServerConfig.SPEC.acceptConfig(event.getConfig().getConfigData());
             CaveDweller.RELOAD_ALL = true;
-
             CaveDweller.LOG.info("Server configuration has been reloaded");
-
             // TODO :: Only reset timers when needed (e.g. if dimensions get added only do missing etc.)
         }
     }
