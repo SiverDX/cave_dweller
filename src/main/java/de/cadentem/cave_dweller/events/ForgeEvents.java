@@ -117,7 +117,7 @@ public class ForgeEvents {
                                             boolean wasSuccessful = CaveDweller.speedUpTimers(dimension, spawnDelta, noiseDelta);
 
                                             if (wasSuccessful) {
-                                                context.getSource().sendSuccess(Component.literal("Server configuration has been reloaded"), true);
+                                                context.getSource().sendSuccess(Component.literal("Timer has been successfully changed"), true);
                                             } else {
                                                 context.getSource().sendFailure(Component.literal("Timer for dimension [" + dimension + "] does not exist"));
                                             }

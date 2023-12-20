@@ -85,8 +85,6 @@ public class CaveDwellerStareGoal extends Goal {
             caveDweller.getNavigation().moveTo(target, 1);
         } else {
             caveDweller.pleaseStopMoving = true;
-            caveDweller.xxa = 0;
-            caveDweller.zza = 0;
             caveDweller.getNavigation().stop();
             caveDweller.setDeltaMovement(Vec3.ZERO);
         }
