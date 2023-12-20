@@ -1,11 +1,20 @@
 package de.cadentem.cave_dweller.events;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.datafixers.util.Pair;
 import de.cadentem.cave_dweller.CaveDweller;
 import de.cadentem.cave_dweller.config.ServerConfig;
 import de.cadentem.cave_dweller.entities.CaveDwellerEntity;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.commands.arguments.DimensionArgument;
+import net.minecraft.network.chat.TextComponent;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingKnockBackEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -66,5 +75,89 @@ public class ForgeEvents {
                 event.setCanceled(true);
             }
         }
+    }
+
+    @SubscribeEvent
+    public static void registerEvents(final RegisterCommandsEvent event) {
+        LiteralArgumentBuilder<CommandSourceStack> builder = Commands.literal("cave_dweller").requires(source -> source.hasPermission(2));
+
+        /* TODO
+            Does not work - the cache gets reset but it reads some old state of the file?
+        builder.then(Commands.literal("reload")
+                .executes(context -> {
+                    ServerConfig.SPEC.afterReload();
+                    CaveDweller.RELOAD_ALL = true;
+                    context.getSource().sendSuccess(Component.literal("Server configuration has been reloaded"), true);
+                    return 1;
+                })
+        );
+        */
+
+        builder.then(Commands.literal("fast_forward")
+                .then(Commands.argument("dimension", DimensionArgument.dimension())
+                        .then(Commands.argument("spawn_delta_ticks", IntegerArgumentType.integer())
+                                .then(Commands.argument("noise_delta_ticks", IntegerArgumentType.integer())
+                                        .executes(context -> {
+                                            String dimension = DimensionArgument.getDimension(context, "dimension").dimension().location().toString();
+                                            int spawnDelta = IntegerArgumentType.getInteger(context, "spawn_delta_ticks");
+                                            int noiseDelta = IntegerArgumentType.getInteger(context, "noise_delta_ticks");
+
+                                            boolean wasSuccessful = CaveDweller.speedUpTimers(dimension, spawnDelta, noiseDelta);
+
+                                            if (wasSuccessful) {
+                                                context.getSource().sendSuccess(new TextComponent("Timer has been successfully changed"), true);
+                                            } else {
+                                                context.getSource().sendFailure(new TextComponent("Timer for dimension [" + dimension + "] does not exist"));
+                                            }
+
+                                            return 1;
+                                        })
+                                )
+                        )
+                )
+        );
+
+        builder.then(Commands.literal("get_target")
+                .then(Commands.argument("dimension", DimensionArgument.dimension())
+                        .executes(context -> {
+                            String dimension = DimensionArgument.getDimension(context, "dimension").dimension().location().toString();
+                            Entity currentVictim = CaveDweller.getCurrentVictim(dimension);
+
+                            if (currentVictim != null) {
+                                context.getSource().sendSuccess(new TextComponent(currentVictim.toString()), true);
+                            } else {
+                                context.getSource().sendFailure(new TextComponent("Timer for dimension [" + dimension + "] does not exist or has no target"));
+                            }
+
+                            return 1;
+                        })
+                )
+        );
+
+        builder.then(Commands.literal("get_timer")
+                .then(Commands.argument("dimension", DimensionArgument.dimension())
+                        .then(Commands.argument("type", StringArgumentType.string()).suggests((context, suggestionsBuilder) -> SharedSuggestionProvider.suggest(new String[]{"spawn", "noise"}, suggestionsBuilder))
+                                .executes(context -> {
+                                    String dimension = DimensionArgument.getDimension(context, "dimension").dimension().location().toString();
+                                    String type = StringArgumentType.getString(context, "type");
+
+                                    Pair<Integer, Integer> timer = CaveDweller.getTimer(dimension, type);
+
+                                    if (timer.getFirst() != -1 && timer.getSecond() != -1) {
+                                        double currentSeconds = timer.getFirst() / 20d;
+                                        double targetSeconds = timer.getSecond() / 20d;
+
+                                        context.getSource().sendSuccess(new TextComponent(currentSeconds + " / " + targetSeconds + " seconds"), true);
+                                    } else {
+                                        context.getSource().sendFailure(new TextComponent("Timer for dimension [" + dimension + "] does not exist"));
+                                    }
+
+                                    return 1;
+                                })
+                        )
+                )
+        );
+
+        event.getDispatcher().register(builder);
     }
 }

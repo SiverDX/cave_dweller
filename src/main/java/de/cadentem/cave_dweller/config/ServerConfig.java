@@ -2,14 +2,14 @@ package de.cadentem.cave_dweller.config;
 
 import de.cadentem.cave_dweller.datagen.ModBiomeTagsProvider;
 import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.List;
+import java.util.Optional;
 
 public class ServerConfig {
     public static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
@@ -48,6 +48,7 @@ public class ServerConfig {
 
     // Behaviour
     public static ForgeConfigSpec.IntValue SPOTTING_RANGE;
+    public static ForgeConfigSpec.BooleanValue CAN_DISABLE_SHIELDS;
     public static ForgeConfigSpec.BooleanValue CAN_CLIMB;
     public static ForgeConfigSpec.BooleanValue CAN_BREAK_DOOR;
     public static ForgeConfigSpec.IntValue BREAK_DOOR_TIME;
@@ -104,6 +105,7 @@ public class ServerConfig {
 
         BUILDER.push("Behaviour");
         SPOTTING_RANGE = BUILDER.comment("The distance in blocks at which the Cave Dweller can detect whether a player is looking at it or not").defineInRange("spotting_range", 60, 0, 128);
+        CAN_DISABLE_SHIELDS = BUILDER.comment("Whether it can disable shields or not").define("can_disable_shields", false);
         CAN_CLIMB = BUILDER.comment("Whether the cave dweller can climb or not").define("can_climb", true);
         CAN_BREAK_DOOR = BUILDER.comment("Whether the cave dweller can break down doors or not").define("can_break_door", true);
         BREAK_DOOR_TIME = BUILDER.comment("Time (in seconds) it takes the Cave Dweller to break down a door").defineInRange("break_door_time", 3, 1, 60);
@@ -165,11 +167,14 @@ public class ServerConfig {
             Holder<Biome> biome = serverLevel.getBiome(entity.blockPosition());
 
             boolean isWhitelist = SURFACE_BIOMES_IS_WHITELIST.get();
-            boolean isBiomeInList;
+            boolean isBiomeInList = false;
 
             if (OVERRIDE_BIOME_DATAPACK_CONFIG.get()) {
-                ResourceLocation resource = ForgeRegistries.BIOMES.getKey(biome.value());
-                isBiomeInList = resource != null && SURFACE_BIOMES.get().contains(resource.toString());
+                Optional<ResourceKey<Biome>> unwrapped = biome.unwrapKey();
+
+                if (unwrapped.isPresent()) {
+                    isBiomeInList = SURFACE_BIOMES.get().contains(unwrapped.get().location().toString());
+                }
             } else {
                 isBiomeInList = biome.is(ModBiomeTagsProvider.CAVE_DWELLER_SURFACE_BIOMES);
             }
