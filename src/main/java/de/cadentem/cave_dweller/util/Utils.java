@@ -42,24 +42,24 @@ public class Utils {
         return "";
     }
 
-    public static boolean isValidPlayer(final Entity entity) {
-        if (!(entity instanceof Player player)) {
+    public static boolean isValidTarget(final Entity entity) {
+        if (entity == null) {
             return false;
         }
 
-        if (!player.isAlive()) {
+        if (!entity.isAlive()) {
             return false;
         }
 
-        if (!ServerConfig.TARGET_INVISIBLE.get() && player.isInvisible()) {
+        if (!ServerConfig.TARGET_INVISIBLE.get() && entity.isInvisible()) {
             return false;
         }
 
-        return !(player.isCreative() || player.isSpectator());
+        return !(entity instanceof Player player) || (!player.isCreative() && !player.isSpectator());
     }
 
     public static LivingEntity getValidTarget(@NotNull final CaveDwellerEntity caveDweller) {
-        return caveDweller.level.getNearestPlayer(caveDweller.position().x, caveDweller.position().y, caveDweller.position().z, 128, Utils::isValidPlayer);
+        return caveDweller.level.getNearestPlayer(caveDweller.position().x, caveDweller.position().y, caveDweller.position().z, 128, Utils::isValidTarget);
     }
 
     public static boolean isOnSurface(@Nullable final Entity entity) {
@@ -138,14 +138,14 @@ public class Utils {
         for (int i = attempts; i >= -attempts; --i) {
             mutableBlockPosition.move(Direction.DOWN);
             blockpos$mutableblockpos.setWithOffset(mutableBlockPosition, Direction.UP);
-            BlockState blockstate1 = level.getBlockState(mutableBlockPosition);
+            BlockState blockStateBelow = level.getBlockState(mutableBlockPosition);
 
-            if (blockstate.getCollisionShape(level, blockpos$mutableblockpos).isEmpty() && Block.isFaceFull(blockstate1.getCollisionShape(level, mutableBlockPosition), Direction.UP)) {
+            if (blockstate.getCollisionShape(level, blockpos$mutableblockpos).isEmpty() && Block.isFaceFull(blockStateBelow.getCollisionShape(level, mutableBlockPosition), Direction.UP)) {
                 mutableBlockPosition.move(Direction.UP);
                 return true;
             }
 
-            blockstate = blockstate1;
+            blockstate = blockStateBelow;
         }
 
         return false;

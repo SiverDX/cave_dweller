@@ -191,7 +191,7 @@ public class CaveDweller {
     }
 
     private boolean isRelevantPlayer(final ServerPlayer player) {
-        if (!Utils.isValidPlayer(player)) {
+        if (!Utils.isValidTarget(player)) {
             return false;
         }
 

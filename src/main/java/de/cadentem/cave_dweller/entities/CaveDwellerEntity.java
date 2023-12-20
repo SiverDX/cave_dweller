@@ -511,7 +511,7 @@ public class CaveDwellerEntity extends Monster implements IAnimatable {
     }
 
     public boolean isLookingAtMe(final Entity target, boolean directlyLooking) {
-        if (!Utils.isValidPlayer(target)) {
+        if (!Utils.isValidTarget(target)) {
             return false;
         }
 

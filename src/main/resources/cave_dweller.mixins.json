@@ -6,7 +6,8 @@
   "mixins": [
     "MixinLivingEntity",
     "MixinGroundPathNavigation",
-    "MixinPathNavigation"
+    "MixinPathNavigation",
+    "MixinMob"
   ],
   "client": []
 }

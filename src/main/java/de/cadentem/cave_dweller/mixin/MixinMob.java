@@ -15,10 +15,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Mob.class)
 public abstract class MixinMob {
-    @Inject(method = "maybeDisableShield", at = @At("HEAD"))
+    @Inject(method = "maybeDisableShield", at = @At("HEAD"), cancellable = true)
     private void disableShield(final Player player, final ItemStack mobStack, final ItemStack playerStack, final CallbackInfo callback) {
         if (ServerConfig.CAN_DISABLE_SHIELDS.get() && (Object) this instanceof CaveDwellerEntity && !(mobStack.getItem() instanceof AxeItem)) {
             maybeDisableShield(player, Items.DIAMOND_AXE.getDefaultInstance(), playerStack);
+            callback.cancel();
         }
     }
 
