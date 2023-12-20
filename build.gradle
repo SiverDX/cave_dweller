@@ -40,7 +40,7 @@ minecraft {
     // By default, the folder name of a run configuration is the name of the Gradle project containing it.
     // generateRunFolders = true
 
-    // accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
 
     runs {
         configureEach {
@@ -57,6 +57,12 @@ minecraft {
 
         client {
             property 'forge.enabledGameTestNamespaces', mod_id
+        }
+
+        clientRandom {
+            parent runs.client
+            // #### will be replaced with a random number | UUID is a randomly generated one
+            args '--username', 'Dev####', '--uuid', 'fdb0e318-1ac3-4049-b6f8-d024c0b87a56'
         }
 
         server {

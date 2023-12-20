@@ -2,14 +2,14 @@ package de.cadentem.cave_dweller.config;
 
 import de.cadentem.cave_dweller.datagen.ModBiomeTagsProvider;
 import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.List;
+import java.util.Optional;
 
 public class ServerConfig {
     public static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
@@ -37,6 +37,8 @@ public class ServerConfig {
     public static ForgeConfigSpec.IntValue SKY_LIGHT_LEVEL;
     public static ForgeConfigSpec.IntValue BLOCK_LIGHT_LEVEL;
     public static ForgeConfigSpec.IntValue MAXIMUM_AMOUNT;
+    public static ForgeConfigSpec.IntValue SPAWN_DISTANCE;
+    public static ForgeConfigSpec.BooleanValue CHECK_PATH_TO_SPAWN;
     // Dimensions
     public static ForgeConfigSpec.ConfigValue<List<? extends String>> DIMENSION_WHITELIST;
     // Biomes
@@ -46,6 +48,7 @@ public class ServerConfig {
 
     // Behaviour
     public static ForgeConfigSpec.IntValue SPOTTING_RANGE;
+    public static ForgeConfigSpec.BooleanValue CAN_DISABLE_SHIELDS;
     public static ForgeConfigSpec.BooleanValue CAN_CLIMB;
     public static ForgeConfigSpec.BooleanValue CAN_BREAK_DOOR;
     public static ForgeConfigSpec.IntValue BREAK_DOOR_TIME;
@@ -58,6 +61,9 @@ public class ServerConfig {
     public static ForgeConfigSpec.DoubleValue ATTACK_SPEED;
     public static ForgeConfigSpec.DoubleValue MOVEMENT_SPEED;
     public static ForgeConfigSpec.DoubleValue DEPTH_STRIDER_BONUS;
+
+    // Misc
+    public static ForgeConfigSpec.BooleanValue ONLY_PLAY_NOISE_TO_TARGET;
 
     static {
         BUILDER.push("Timers");
@@ -84,7 +90,9 @@ public class ServerConfig {
         ALLOW_SURFACE_SPAWN = BUILDER.comment("Whether the Cave Dweller can spawn on the surface or not").define("allow_surface_spawn", false);
         SKY_LIGHT_LEVEL = BUILDER.comment("The maximum sky light level the Cave Dweller can spawn at").defineInRange("sky_light_level", 8, 0, 15);
         BLOCK_LIGHT_LEVEL = BUILDER.comment("The maximum block light level the Cave Dweller can spawn at").defineInRange("block_light_level", 15, 0, 15);
-        MAXIMUM_AMOUNT = BUILDER.comment("The maximum amount of cave dwellers which can exist at the same time").defineInRange("maximum_amoount", 1, 0, 100);
+        MAXIMUM_AMOUNT = BUILDER.comment("The maximum amount of cave dwellers which can exist at the same time").defineInRange("maximum_amount", 3, 0, 100);
+        SPAWN_DISTANCE = BUILDER.comment("How close to players the cave dweller is allowed to spawn (in blocks)").defineInRange("spawn_distance", 16, 0, 64);
+        CHECK_PATH_TO_SPAWN = BUILDER.comment("If set to true the cave dweller will try to find a spawn position with a possible path to the player").define("check_path_to_spawn", true);
         BUILDER.push("Dimensions");
         DIMENSION_WHITELIST = BUILDER.comment("The dimensions where the Cave Dweller can spawn in (Whitelist)").defineList("dimension_whitelist", List.of("minecraft:overworld"), ServerConfig::resourcePredicate);
         BUILDER.pop();
@@ -97,6 +105,7 @@ public class ServerConfig {
 
         BUILDER.push("Behaviour");
         SPOTTING_RANGE = BUILDER.comment("The distance in blocks at which the Cave Dweller can detect whether a player is looking at it or not").defineInRange("spotting_range", 60, 0, 128);
+        CAN_DISABLE_SHIELDS = BUILDER.comment("Whether it can disable shields or not").define("can_disable_shields", false);
         CAN_CLIMB = BUILDER.comment("Whether the cave dweller can climb or not").define("can_climb", true);
         CAN_BREAK_DOOR = BUILDER.comment("Whether the cave dweller can break down doors or not").define("can_break_door", true);
         BREAK_DOOR_TIME = BUILDER.comment("Time (in seconds) it takes the Cave Dweller to break down a door").defineInRange("break_door_time", 3, 1, 60);
@@ -110,6 +119,10 @@ public class ServerConfig {
         ATTACK_SPEED = BUILDER.comment("Attack speed").defineInRange("attack_speed", 0.35, 0, 10);
         MOVEMENT_SPEED = BUILDER.comment("Movement speed").defineInRange("movement_speed", 0.5, 0, 5);
         DEPTH_STRIDER_BONUS = BUILDER.comment("Depth Strider (movement speed in water) bonus").defineInRange("depth_strider_bonus", 1.5, 0, 3);
+        BUILDER.pop();
+
+        BUILDER.push("Misc");
+        ONLY_PLAY_NOISE_TO_TARGET = BUILDER.comment("Only play the ambient noises to the current (spawn) target (Note: The target can change when a spawn attempt is not successful)").define("only_play_noise_to_target", false);
         BUILDER.pop();
 
         SPEC = BUILDER.build();
@@ -154,11 +167,14 @@ public class ServerConfig {
             Holder<Biome> biome = serverLevel.getBiome(entity.blockPosition());
 
             boolean isWhitelist = SURFACE_BIOMES_IS_WHITELIST.get();
-            boolean isBiomeInList;
+            boolean isBiomeInList = false;
 
             if (OVERRIDE_BIOME_DATAPACK_CONFIG.get()) {
-                ResourceLocation resource = ForgeRegistries.BIOMES.getKey(biome.get());
-                isBiomeInList = resource != null && SURFACE_BIOMES.get().contains(resource.toString());
+                Optional<ResourceKey<Biome>> unwrapped = biome.unwrapKey();
+
+                if (unwrapped.isPresent()) {
+                    isBiomeInList = SURFACE_BIOMES.get().contains(unwrapped.get().location().toString());
+                }
             } else {
                 isBiomeInList = biome.is(ModBiomeTagsProvider.CAVE_DWELLER_SURFACE_BIOMES);
             }

@@ -5,6 +5,8 @@ import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.player.Player;
 
+import java.util.List;
+
 public class CaveDwellerTargetSeesMeGoal extends NearestAttackableTargetGoal<Player> {
     private final CaveDwellerEntity caveDweller;
 
@@ -23,7 +25,7 @@ public class CaveDwellerTargetSeesMeGoal extends NearestAttackableTargetGoal<Pla
             if (!Utils.isValidPlayer(target)) {
                 return false;
             } else {
-                return caveDweller.isLookingAtMe(target);
+                return caveDweller.isLookingAtMe(target, true);
             }
         }
     }
@@ -31,13 +33,10 @@ public class CaveDwellerTargetSeesMeGoal extends NearestAttackableTargetGoal<Pla
     @Override
     public void start() {
         caveDweller.setTarget(target);
-        caveDweller.getEntityData().set(CaveDwellerEntity.SPOTTED_ACCESSOR, true);
+        caveDweller.setSpotted(true);
 
-        // To avoid the player never noticing it (flee roll) or it just randomly aggroing through solid blocks (chase roll)
-        if (target != null && !target.hasLineOfSight(caveDweller)) {
-            caveDweller.currentRoll = Roll.STARE;
-        } else {
-            caveDweller.reRoll();
+        if (target != null) {
+            caveDweller.pickRoll(List.of(Roll.CHASE, Roll.STARE, Roll.STARE, Roll.FLEE));
         }
 
         super.start();

@@ -9,7 +9,6 @@ import de.cadentem.cave_dweller.util.Utils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -17,7 +16,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -26,14 +24,14 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.navigation.WallClimberNavigation;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.pathfinder.BlockPathTypes;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
@@ -66,17 +64,15 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
     public static final EntityDataAccessor<Boolean> SPOTTED_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
     public static final EntityDataAccessor<Boolean> CLIMBING_ACCESSOR = SynchedEntityData.defineId(CaveDwellerEntity.class, EntityDataSerializers.BOOLEAN);
 
-    private final float twoBlockSpaceCooldown;
-
     public Roll currentRoll = Roll.STROLL;
     public boolean isFleeing;
+    /** To be able to create a path while spawning */
+    public boolean hasSpawned;
     public boolean pleaseStopMoving;
-    public boolean targetIsLookingAtMe;
+    public boolean targetIsFacingMe;
 
-    private float twoBlockSpaceTimer;
     private int ticksTillRemove;
     private int chaseSoundClock;
-    private boolean inTwoBlockSpace;
     private boolean alreadyPlayedFleeSound;
     private boolean alreadyPlayedSpottedSound;
     private boolean startedPlayingChaseSound;
@@ -85,29 +81,31 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
     public CaveDwellerEntity(final EntityType<? extends CaveDwellerEntity> entityType, final Level level) {
         super(entityType, level);
         this.refreshDimensions();
-        this.twoBlockSpaceCooldown = 5.0F;
         this.ticksTillRemove = Utils.secondsToTicks(ServerConfig.TIME_UNTIL_LEAVE.get());
+        this.setPathfindingMalus(BlockPathTypes.UNPASSABLE_RAIL, 0.0f);
     }
 
     @Override
-    public @Nullable SpawnGroupData finalizeSpawn(@NotNull final ServerLevelAccessor level, @NotNull final DifficultyInstance difficulty, @NotNull final MobSpawnType reason, @Nullable final SpawnGroupData spawnData, @Nullable final CompoundTag tagData) {
+    public void onAddedToWorld() {
+        super.onAddedToWorld();
+
         setAttribute(getAttribute(Attributes.MAX_HEALTH), ServerConfig.MAX_HEALTH.get());
         setAttribute(getAttribute(Attributes.ATTACK_DAMAGE), ServerConfig.ATTACK_DAMAGE.get());
         setAttribute(getAttribute(Attributes.ATTACK_SPEED), ServerConfig.ATTACK_SPEED.get());
         setAttribute(getAttribute(Attributes.MOVEMENT_SPEED), ServerConfig.MOVEMENT_SPEED.get());
         setAttribute(getAttribute(ForgeMod.STEP_HEIGHT_ADDITION.get()), 0.4); // LivingEntity default is 0.6
-
-        return super.finalizeSpawn(level, difficulty, reason, spawnData, tagData);
     }
 
-    private void setAttribute(final AttributeInstance attribute, double value) {
+    private void setAttribute(final AttributeInstance attribute, double newValue) {
         if (attribute != null) {
-            attribute.setBaseValue(value);
+            double baseValue = attribute.getBaseValue();
+            float difference = (float) (newValue - baseValue);
+            attribute.setBaseValue(newValue);
 
             if (attribute.getAttribute() == Attributes.MAX_HEALTH) {
-                setHealth((float) value);
+                setHealth(getHealth() + difference);
             } else if (attribute.getAttribute() == Attributes.MOVEMENT_SPEED) {
-                setSpeed((float) value);
+                setSpeed(getSpeed() + difference);
             }
         }
     }
@@ -141,47 +139,25 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
     @Override
     protected void registerGoals() {
         goalSelector.addGoal(1, new CaveDwellerChaseGoal(this, true));
-        goalSelector.addGoal(1, new CaveDwellerFleeGoal(this, 20.0F, 1.0));
+        goalSelector.addGoal(1, new CaveDwellerFleeGoal(this, 20, 1));
         goalSelector.addGoal(2, new CaveDwellerBreakInvisGoal(this));
         goalSelector.addGoal(2, new CaveDwellerStareGoal(this));
         if (ServerConfig.CAN_BREAK_DOOR.get()) { // TODO :: Remove for already spawned entities on config change?
             goalSelector.addGoal(2, new CaveDwellerBreakDoorGoal(this, difficulty -> true));
         }
-        goalSelector.addGoal(3, new CaveDwellerStrollGoal(this, 0.7));
-        targetSelector.addGoal(1, new CaveDwellerTargetTooCloseGoal(this, 12.0F));
+        goalSelector.addGoal(3, new CaveDwellerStrollGoal(this, 0.35));
+        targetSelector.addGoal(0, new CustomHurtByTargetGoal(this));
+        targetSelector.addGoal(1, new CaveDwellerTargetTooCloseGoal(this, 12));
         targetSelector.addGoal(2, new CaveDwellerTargetSeesMeGoal(this));
-    }
-
-    public Vec3 generatePos(final Entity player) {
-        Vec3 playerPos = player.position();
-        Random rand = new Random();
-        double randX = rand.nextInt(70) - 35;
-        double randZ = rand.nextInt(70) - 35;
-        int posX = (int) (playerPos.x + randX);
-        int posY = (int) (playerPos.y + 10.0);
-        int posZ = (int) (playerPos.z + randZ);
-
-        for (int runFor = 100; runFor >= 0; --posY) {
-            BlockPos blockPosition = new BlockPos(posX, posY, posZ);
-            BlockPos blockPosition2 = new BlockPos(posX, posY + 1, posZ);
-            BlockPos blockPosition3 = new BlockPos(posX, posY + 2, posZ);
-            BlockPos blockPosition4 = new BlockPos(posX, posY - 1, posZ);
-            --runFor;
-
-            if (!level.getBlockState(blockPosition).getMaterial().blocksMotion()
-                    && !level.getBlockState(blockPosition2).getMaterial().blocksMotion()
-                    && !level.getBlockState(blockPosition3).getMaterial().blocksMotion()
-                    && level.getBlockState(blockPosition4).getMaterial().blocksMotion()) {
-                break;
-            }
-        }
-
-        return new Vec3(posX, posY, posZ);
     }
 
     public void disappear() {
         playDisappearSound();
         discard();
+    }
+
+    public boolean hasSpawned() {
+        return hasSpawned;
     }
 
     @Override
@@ -203,6 +179,11 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
     }
 
     @Override
+    public boolean canDisableShield() {
+        return ServerConfig.CAN_DISABLE_SHIELDS.get();
+    }
+
+    @Override
     public void tick() {
         --ticksTillRemove;
 
@@ -217,63 +198,69 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         }
 
         if (getTarget() != null) {
-            targetIsLookingAtMe = isLookingAtMe(getTarget());
+            targetIsFacingMe = isLookingAtMe(getTarget(), false);
         }
 
-        boolean shouldCrouch = false;
+        if (level instanceof ServerLevel) {
+            boolean isAboveSolid = level.getBlockState(blockPosition().above()).getMaterial().isSolid();
+            boolean isTwoAboveSolid = level.getBlockState(blockPosition().above(2)).getMaterial().isSolid();
+            boolean isThreeAboveSolid = level.getBlockState(blockPosition().above(3)).getMaterial().isSolid();
 
-        if (!getEntityData().get(CRAWLING_ACCESSOR)) {
-            boolean isTwoAboveSolid = level.getBlockState(blockPosition().above().above()).getMaterial().isSolid();
-
-            /* [x : blocks | o : cave dweller]
-            To handle these two variants:
-                o
-            xxxxo       xxxxo
-                o           o
-            xxxxx       xxxxo
-            */
-            Vec3i offset = new Vec3i(getDirection().getStepX(), getDirection().getStepY(), getDirection().getStepZ());
+            Vec3i offset = getDirectionVector();
             boolean isFacingSolid = level.getBlockState(blockPosition().relative(getDirection())).getMaterial().isSolid();
 
-            if (isFacingSolid) {
+            /* Offset is set to the block above the block position (which is at feet level) (since direction is used it's the block in front for both cases)
+                -----o                  -----o
+                     o                       o <- offset
+                -----o <- current       -----o
+            */
+            if (isFacingSolid) { // TODO :: Clean up, the offset with the check is kinda useless at this point since both positions are needed for correct checks
                 offset = offset.offset(0, 1, 0);
             }
 
             boolean isOffsetFacingSolid = level.getBlockState(blockPosition().offset(offset)).getMaterial().isSolid();
-            boolean isOffsetFacingTwoAboveSolid = level.getBlockState(blockPosition().offset(offset).above().above()).getMaterial().isSolid();
-            boolean isOffsetFacingAboveSolid = level.getBlockState(blockPosition().relative(getDirection()).above()).getMaterial().isSolid();
+            boolean isOffsetFacingAboveSolid = level.getBlockState(blockPosition().offset(offset).above()).getMaterial().isSolid();
+            boolean isOffsetFacingTwoAboveSolid = level.getBlockState(blockPosition().offset(offset).above(2)).getMaterial().isSolid();
 
-            shouldCrouch = isTwoAboveSolid || (!isOffsetFacingSolid && !isOffsetFacingAboveSolid && isOffsetFacingTwoAboveSolid);
-        }
+            /* [- : blocks | o : cave dweller | + : cave dweller in solid block]
+                To handle these variants among other things:
+               ----+        ----o       -----
+                   o            o           o
+                   o            o           o
+               -----        -----       ----o
+            */
+            boolean shouldCrouch = isTwoAboveSolid || (!isOffsetFacingSolid && !isOffsetFacingAboveSolid && (isOffsetFacingTwoAboveSolid || isFacingSolid && isThreeAboveSolid)) ;
 
-        if (shouldCrouch) {
-            twoBlockSpaceTimer = twoBlockSpaceCooldown;
-            inTwoBlockSpace = true;
-        } else {
-            // Don't immediately stop crouching
-            --twoBlockSpaceTimer;
+            /* [- : blocks | o : cave dweller | + : cave dweller in solid block]
+                To handle these variants among other things:
+                    o           o
+                ----+       ----o       ----+
+                    o           o           o
+                -----       -----       ----o
+            */
+            boolean shouldCrawl = isAboveSolid || !isOffsetFacingSolid && isOffsetFacingAboveSolid || isFacingSolid && isTwoAboveSolid;
 
-            if (twoBlockSpaceTimer <= 0.0F) {
-                inTwoBlockSpace = false;
-            }
-        }
-
-        if (level instanceof ServerLevel) {
             if (isAggressive() || isFleeing) {
                 entityData.set(SPOTTED_ACCESSOR, false);
             }
 
             setClimbing(horizontalCollision);
-            entityData.set(CROUCHING_ACCESSOR, inTwoBlockSpace);
+            entityData.set(CROUCHING_ACCESSOR, shouldCrouch);
+            setCrawling(shouldCrawl);
         }
 
         if (entityData.get(SPOTTED_ACCESSOR)) {
             playSpottedSound();
         }
 
-        refreshDimensions();
+        refreshDimensions(); // TODO :: Currently needed to make client stay in sync
+        getNavigation().setSpeedModifier(getSpeedModifier());
 
         super.tick();
+    }
+
+    public double getSpeedModifier() {
+        return isCrawling() ? 0.35 : isCrouching() ? 0.6 : 0.85;
     }
 
     @Override
@@ -316,11 +303,16 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
             return false;
         }
 
-        if (getTarget() != null /*&& getTarget().getPosition(1).y > getY()*/) {
-            return entityData.get(CLIMBING_ACCESSOR);
+        if (getTarget() != null) {
+            // TODO :: Not sure if the initial two checks are needed
+            return !isCrawling() && !isCrouching() && entityData.get(CLIMBING_ACCESSOR);
         }
 
         return false;
+    }
+
+    public void setSpotted(boolean value) {
+        entityData.set(SPOTTED_ACCESSOR, value);
     }
 
     public void setClimbing(boolean isClimbing) {
@@ -329,14 +321,23 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
 
     @Override
     protected @NotNull PathNavigation createNavigation(@NotNull final Level level) {
-        return new WallClimberNavigation(this, level);
+        WallClimberNavigation navigation = new WallClimberNavigation(this, level);
+        navigation.setMaxVisitedNodesMultiplier(4);
+        return navigation;
     }
 
     private PlayState predicate(final AnimationState<CaveDwellerEntity> state) {
-        if (entityData.get(CRAWLING_ACCESSOR)) {
+        boolean isCurrentAboveSolid = level.getBlockState(blockPosition().above()).getMaterial().isSolid();
+        boolean unsure = isCrawling() && level.getBlockState(blockPosition()).getMaterial().isSolid();
+//        boolean isFacingAboveSolid = isCrawling() && level.getBlockState(blockPosition().offset(getDirectionVector()).above()).getMaterial().isSolid();
+        boolean isCurrentTwoAboveSolid = level.getBlockState(blockPosition().above(2)).getMaterial().isSolid();
+//        boolean isFacingTwoAboveSolid = isCrouching() && level.getBlockState(blockPosition().offset(getDirectionVector()).above(2)).getMaterial().isSolid();;
+
+        // TODO :: Climbing animation
+        if (isCurrentAboveSolid || unsure/* || isFacingAboveSolid*/) {
             // Crawling
             return state.setAndContinue(CRAWL);
-        } else if (entityData.get(CROUCHING_ACCESSOR)) {
+        } else if (isCurrentTwoAboveSolid /*|| isFacingTwoAboveSolid*/) {
             // Crouching
             if (state.isMoving()) {
                 return state.setAndContinue(CROUCH_RUN);
@@ -372,7 +373,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
 
     @Override
     public void registerControllers(final AnimatableManager.ControllerRegistrar registrar) {
-        registrar.add(new AnimationController<CaveDwellerEntity>(this, "controller", 3, this::predicate));
+        registrar.add(new AnimationController<>(this, "controller", 3, this::predicate));
     }
 
     @Override
@@ -394,11 +395,10 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         level.playSound(null, this, soundEvent, SoundSource.HOSTILE, volume, pitch);
     }
 
-    // TODO :: Is this needed? Why not just playEntitySound
     private void playBlockPosSound(final ResourceLocation soundResource, float volume, float pitch) {
         if (level instanceof ServerLevel serverLevel) {
-            int radius = 60; // blocks
-            serverLevel.getPlayers(player -> player.distanceToSqr(this) <= radius * radius).forEach(player -> NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CaveSound(soundResource, player.blockPosition(), volume, pitch)));
+            int radius = 32; // blocks
+            serverLevel.getPlayers(player -> player.distanceToSqr(this) <= radius * radius).forEach(player -> NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CaveSound(soundResource, blockPosition(), volume, pitch)));
         }
     }
 
@@ -478,6 +478,27 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         playEntitySound(soundevent, 2.0F, 1.0F);
     }
 
+    public void setCrawling(boolean shouldCrawl) {
+        if (shouldCrawl) {
+            getEntityData().set(CROUCHING_ACCESSOR, false);
+        }
+
+        getEntityData().set(CRAWLING_ACCESSOR, shouldCrawl);
+        refreshDimensions();
+    }
+
+    public boolean isCrawling() {
+        return entityData.get(CRAWLING_ACCESSOR);
+    }
+
+
+    /* TODO :: Check
+    @Override
+    public boolean isVisuallyCrawling() {
+        return super.isVisuallyCrawling();
+    }
+    */
+
     @Override
     protected void tickDeath() {
         super.tickDeath();
@@ -488,7 +509,7 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         }
     }
 
-    public boolean isLookingAtMe(final Entity target) {
+    public boolean isLookingAtMe(final Entity target, boolean directlyLooking) {
         if (!Utils.isValidPlayer(target)) {
             return false;
         }
@@ -497,17 +518,16 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
             return false;
         }
 
-        return isLooking(target);
-    }
-
-    private boolean isLooking(final Entity target) {
         Vec3 viewVector = target.getViewVector(1.0F).normalize();
         Vec3 difference = new Vec3(getX() - target.getX(), getEyeY() - target.getEyeY(), getZ() - target.getZ());
         difference = difference.normalize();
         double dot = viewVector.dot(difference);
 
-        // FIXME :: The line of sight method is very unreliable
-        return dot > 0 /*&& target.hasLineOfSight(this)*/;
+        if (directlyLooking && target instanceof Player player) {
+            return dot > 0.99 && player.hasLineOfSight(this);
+        }
+
+        return dot > 0.3;
     }
 
     public boolean teleportToTarget() {
@@ -536,6 +556,10 @@ public class CaveDwellerEntity extends Monster implements GeoEntity {
         teleportTo(validPosition.getX(), validPosition.getY(), validPosition.getZ());
 
         return true;
+    }
+
+    private Vec3i getDirectionVector() {
+        return new Vec3i(getDirection().getStepX(), getDirection().getStepY(), getDirection().getStepZ());
     }
 
     @Override
