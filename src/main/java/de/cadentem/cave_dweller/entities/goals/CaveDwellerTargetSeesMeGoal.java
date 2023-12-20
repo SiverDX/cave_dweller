@@ -22,7 +22,7 @@ public class CaveDwellerTargetSeesMeGoal extends NearestAttackableTargetGoal<Pla
         } else {
            target = Utils.getValidTarget(caveDweller);
 
-            if (!Utils.isValidPlayer(target)) {
+            if (!Utils.isValidTarget(target)) {
                 return false;
             } else {
                 return caveDweller.isLookingAtMe(target, true);
@@ -49,7 +49,7 @@ public class CaveDwellerTargetSeesMeGoal extends NearestAttackableTargetGoal<Pla
 
     @Override
     public boolean canContinueToUse() {
-        return Utils.isValidPlayer(target);
+        return Utils.isValidTarget(target);
     }
 
     @Override

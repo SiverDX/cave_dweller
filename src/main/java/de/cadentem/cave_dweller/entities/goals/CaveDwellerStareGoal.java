@@ -26,7 +26,7 @@ public class CaveDwellerStareGoal extends Goal {
             return false;
         }
 
-        if (!Utils.isValidPlayer(caveDweller.getTarget())) {
+        if (!Utils.isValidTarget(caveDweller.getTarget())) {
             return false;
         }
 
@@ -35,7 +35,7 @@ public class CaveDwellerStareGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        if (!Utils.isValidPlayer(caveDweller.getTarget())) {
+        if (!Utils.isValidTarget(caveDweller.getTarget())) {
             return false;
         }
 

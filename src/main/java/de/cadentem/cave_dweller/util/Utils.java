@@ -40,24 +40,24 @@ public class Utils {
         return "";
     }
 
-    public static boolean isValidPlayer(final Entity entity) {
-        if (!(entity instanceof Player player)) {
+    public static boolean isValidTarget(final Entity entity) {
+        if (entity == null) {
             return false;
         }
 
-        if (!player.isAlive()) {
+        if (!entity.isAlive()) {
             return false;
         }
 
-        if (!ServerConfig.TARGET_INVISIBLE.get() && player.isInvisible()) {
+        if (!ServerConfig.TARGET_INVISIBLE.get() && entity.isInvisible()) {
             return false;
         }
 
-        return !(player.isCreative() || player.isSpectator());
+        return !(entity instanceof Player player) || (!player.isCreative() && !player.isSpectator());
     }
 
     public static LivingEntity getValidTarget(@NotNull final CaveDwellerEntity caveDweller) {
-        return caveDweller.level().getNearestPlayer(caveDweller.position().x, caveDweller.position().y, caveDweller.position().z, 128, Utils::isValidPlayer);
+        return caveDweller.level().getNearestPlayer(caveDweller.position().x, caveDweller.position().y, caveDweller.position().z, 128, Utils::isValidTarget);
     }
 
     public static boolean isOnSurface(@Nullable final Entity entity) {
