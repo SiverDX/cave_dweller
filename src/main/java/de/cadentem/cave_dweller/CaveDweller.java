@@ -1,5 +1,6 @@
 package de.cadentem.cave_dweller;
 
+import com.mojang.datafixers.util.Pair;
 import com.mojang.logging.LogUtils;
 import de.cadentem.cave_dweller.client.CaveDwellerRenderer;
 import de.cadentem.cave_dweller.config.ServerConfig;
@@ -34,6 +35,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.network.PacketDistributor;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import software.bernie.geckolib.GeckoLib;
 
@@ -196,6 +198,12 @@ public class CaveDweller {
     }
 
     private void playCaveSoundToSpelunkers(final List<ServerPlayer> players, final Timer timer) {
+        Entity currentVictim = timer.currentVictim;
+
+        if (currentVictim == null) {
+            return;
+        }
+
         players.forEach(player -> {
             ResourceLocation soundLocation = switch (RANDOM.nextInt(4)) {
                 case 1 -> ModSounds.CAVENOISE_2.get().getLocation();
@@ -204,8 +212,8 @@ public class CaveDweller {
                 default -> ModSounds.CAVENOISE_1.get().getLocation();
             };
 
-            if (!ServerConfig.ONLY_PLAY_NOISE_TO_TARGET.get() || (timer.currentVictim != null && player.is(timer.currentVictim))) {
-                NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CaveSound(soundLocation, player.blockPosition(), 2.0F, 1.0F));
+            if (!ServerConfig.ONLY_PLAY_NOISE_TO_TARGET.get() || player.is(timer.currentVictim)) {
+                NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CaveSound(soundLocation, currentVictim.blockPosition(), 2.0F, 1.0F));
             }
         });
 
@@ -261,13 +269,48 @@ public class CaveDweller {
         return true;
     }
 
-    public static void speedUpTimers(final String key, int spawnDelta, int noiseDelta) {
+    public static boolean speedUpTimers(final String key, int spawnDelta, int noiseDelta) {
         Timer timer = TIMERS.get(key);
         CaveDweller.LOG.debug("Speeding up timers for the dimension [{}], timer: [{}]", key, timer);
 
         if (timer != null) {
             timer.currentSpawn += spawnDelta;
             timer.currentNoise += noiseDelta;
+            return true;
         }
+
+        return false;
+    }
+
+    public static Pair<Integer, Integer> getTimer(final String key, final String type) {
+        Timer timer = TIMERS.get(key);
+
+        int current = -1;
+        int target = -1;
+
+        if (timer != null) {
+            switch (type) {
+                case "spawn" -> {
+                    current = timer.currentSpawn;
+                    target = timer.targetSpawn;
+                }
+                case "noise" -> {
+                    current = timer.currentNoise;
+                    target = timer.targetNoise;
+                }
+            }
+        }
+
+        return Pair.of(current, target);
+    }
+
+    public static @Nullable Entity getCurrentVictim(final String key) {
+        Timer timer = TIMERS.get(key);
+
+        if (timer != null) {
+            return timer.currentVictim;
+        }
+
+        return null;
     }
 }

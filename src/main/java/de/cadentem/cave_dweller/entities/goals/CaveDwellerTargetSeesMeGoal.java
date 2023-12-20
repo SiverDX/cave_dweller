@@ -33,7 +33,7 @@ public class CaveDwellerTargetSeesMeGoal extends NearestAttackableTargetGoal<Pla
     @Override
     public void start() {
         caveDweller.setTarget(target);
-        caveDweller.getEntityData().set(CaveDwellerEntity.SPOTTED_ACCESSOR, true);
+        caveDweller.setSpotted(true);
 
         if (target != null) {
             caveDweller.pickRoll(List.of(Roll.CHASE, Roll.STARE, Roll.STARE, Roll.FLEE));

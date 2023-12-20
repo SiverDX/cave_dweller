@@ -17,7 +17,7 @@ public class CaveDwellerStareGoal extends Goal {
 
     public CaveDwellerStareGoal(final CaveDwellerEntity caveDweller) {
         this.caveDweller = caveDweller;
-        lookedAtMax = caveDweller.getRandom().nextIntBetweenInclusive(8,15);
+        lookedAtMax = caveDweller.getRandom().nextIntBetweenInclusive(4,13);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class CaveDwellerStareGoal extends Goal {
         lookedAtCount = 0;
         wasNotLookingPreviously = false;
         caveDweller.pleaseStopMoving = false;
-        caveDweller.getEntityData().set(CaveDwellerEntity.SPOTTED_ACCESSOR, false);
+        caveDweller.setSpotted(false);
     }
 
     @Override
@@ -71,8 +71,8 @@ public class CaveDwellerStareGoal extends Goal {
             lookedAtCount++;
         }
 
-        if (lookedAtCount > lookedAtMax && !actuallyLooking) {
-            if (caveDweller.getRandom().nextDouble() < 0.1) {
+        if (lookedAtCount > lookedAtMax) {
+            if (!actuallyLooking && caveDweller.getRandom().nextDouble() < 0.1) {
                 caveDweller.disappear();
             } else if (caveDweller.getRandom().nextDouble() < 0.3) {
                 caveDweller.pickRoll(List.of(Roll.CHASE, Roll.FLEE));

@@ -15,9 +15,7 @@ public abstract class MixinLivingEntity {
     /** Give the Cave Dweller the depth strider effect */
     @ModifyVariable(method = "travel", at = @At("STORE"), name = "f6")
     public float fakeDepthStrider(float depthStriderBonus) {
-        LivingEntity livingEntity = (LivingEntity) (Object) this;
-
-        if (livingEntity instanceof CaveDwellerEntity) {
+        if ((Object) this instanceof CaveDwellerEntity) {
             return ServerConfig.DEPTH_STRIDER_BONUS.get().floatValue();
         }
 
@@ -27,9 +25,7 @@ public abstract class MixinLivingEntity {
     /** Currently needed to prevent the mob from sliding to its previously set target location */
     @Inject(method = "travel", at = @At("HEAD"), cancellable = true)
     public void pleaseStopMoving(final Vec3 travelVector, final CallbackInfo callback) {
-        LivingEntity livingEntity = (LivingEntity) (Object) this;
-
-        if (livingEntity instanceof CaveDwellerEntity caveDweller) {
+        if ((Object) this instanceof CaveDwellerEntity caveDweller) {
             if (caveDweller.pleaseStopMoving) {
                 callback.cancel();
             }
